@@ -1,0 +1,3 @@
+rootProject.name = "scalarfish2"
+include ':app'
+include ':opencv'
