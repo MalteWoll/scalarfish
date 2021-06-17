@@ -289,6 +289,7 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
     // Detecting the chessboard pattern in a Mat variable, corners are saved to the imageCorners variable, returns true if chessboard is detected
     public boolean chessboardDetection(Mat img_result) {
 
+
         boolean found = calib.findChessboardCorners(img_result, boardSize, imageCorners, Calib3d.CALIB_CB_ADAPTIVE_THRESH + Calib3d.CALIB_CB_NORMALIZE_IMAGE + Calib3d.CALIB_CB_FAST_CHECK);
 
         //imageCorners.release();
@@ -301,6 +302,7 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
     public void onCameraViewStarted(int width, int height) {
         Log.d("Camera", "onCameraViewStarted");
         mRGBA = new Mat(height, width, CvType.CV_8UC4);
+        //Log.i("mRGBA size", "Size on camera start: Height: " + height + ", Width: " + width); /* 720x960 */
     }
 
     @Override
@@ -313,22 +315,32 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         Log.d("Camera", "onCameraFrame");
 
-        Mat frame = inputFrame.rgba();
+        boolean found;
+
+        mRGBA = inputFrame.rgba();
+        //Log.i("mRGBA size", "Size after assigning value: Height: " + mRGBA.height() + ", Width: " + mRGBA.width()); /* 720x960 */
+
+        Mat grayImage = new Mat();
 
         cameraCounter++;
         // Limit the fps, increase the number for less fps -> should help with processing
         if(cameraCounter < 6) {
             return null;
         } else {
-            // Find the chessboard in the live view
+            // Convert to gray image
+            Imgproc.cvtColor(mRGBA, grayImage, Imgproc.COLOR_BGR2GRAY);
 
-            if (chessboardDetection(frame)) {
+            // Find the chessboard in the live view
+            found = chessboardDetection(grayImage);
+            if (found) {
                 Log.d("Chessboard", "Chessboard true");
+                Calib3d.drawChessboardCorners(mRGBA, boardSize , imageCorners, found);
+                Log.i("mRGBA size", "Size after drawing corners: Height: " + mRGBA.height() + ", Width: " + mRGBA.width());
             } else {
                 Log.d("Chessboard", "Chessboard false");
             }
-            //Calib3d.drawChessboardCorners(frame, boardSize, imageCorners, chessboardDetection(frame)); /* This replaces the above lines */
-            return frame;
+
+            return mRGBA;
         }
     }
 
