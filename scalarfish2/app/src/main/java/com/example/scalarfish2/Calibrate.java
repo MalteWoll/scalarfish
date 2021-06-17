@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.media.Image;
 import android.net.Uri;
 import android.os.Bundle;
 
@@ -26,9 +27,11 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -42,10 +45,14 @@ import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfByte;
 import org.opencv.core.Size;
 import org.opencv.core.MatOfPoint2f;
+import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.calib3d.*;
+import org.opencv.core.MatOfPoint3f;
+import org.opencv.core.Point3;
 
 public class Calibrate extends Fragment implements View.OnClickListener, CameraBridgeViewBase.CvCameraViewListener2 {
     private static final int MY_CAMERA_REQUEST_CODE = 100;
@@ -57,6 +64,7 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
     ImageView imgView;
     View view;
     Button btnCaptureImg;
+    Button btnCalibrate;
 
     // For creating a path to save the image to
     String currentPhotoPath;
@@ -70,6 +78,25 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
     private JavaCameraView javaCameraView;
     private Mat mRGBA, mRGBAT;
     private final int PERMISSIONS_READ_CAMERA=1;
+    int cameraCounter = 0; /* for counting and reducing fps */
+
+    // Calibration values
+    // The size of the chessboard
+    Size boardSize = new Size(9,6);
+    // A matrix for detecting the corners
+    MatOfPoint2f imageCorners = new MatOfPoint2f();
+    MatOfPoint3f obj = new MatOfPoint3f();
+    // A list of matrices for saving the image corners of every captured chessboard
+    List<Mat> imagePoints = new ArrayList<>();
+    List<Mat> objectPoints = new ArrayList<>();
+
+    // What does this mean?
+    Mat intrinsic = new Mat(3, 3, CvType.CV_32FC1);
+    Mat distCoeffs = new Mat();
+
+    Mat savedImage = new Mat();
+
+    boolean calibrated;
 
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -133,6 +160,11 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
             mParam2 = getArguments().getString(ARG_PARAM2);
         }
 
+        // Calculate the number of squares on the board
+        int numSquares = (int)boardSize.height * (int)boardSize.width;
+        for(int j = 0; j < numSquares; j++) {
+            obj.push_back(new MatOfPoint3f(new Point3(j / (int)boardSize.width, j % (int)boardSize.height, 0.0f)));
+        }
     }
 
     @Override
@@ -145,6 +177,9 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
         btnCaptureImg = (Button) view.findViewById(R.id.btnCaptureImg);
         btnCaptureImg.setOnClickListener(this);
 
+        // Get the button for calibrating and do the same
+        btnCalibrate = (Button) view.findViewById(R.id.btnCalibrate);
+        btnCalibrate.setOnClickListener(this);
 
         // Get the OpenCV camera view in the fragment's layout
         javaCameraView = (JavaCameraView) view.findViewById(R.id.openCvCameraView);
@@ -207,6 +242,7 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
     }
 
     // Creates an unique image file name
+    // Not sure if this is still required, since we capture images from the live view without saving them first
     private File createImageFile() throws IOException {
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         String imageFileName = "JPEG_" + timeStamp + "_";
@@ -223,7 +259,7 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
     }
 
     // Open the camera, take a picture and save the picture
-    // This uses intents to open the android camera, ideally this will not be necessary and we will use the opencv camera
+    // This uses intents to open the android camera, this is no longer necessary since we use the opencv camera
     private void dispatchTakePictureIntent() {
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 
@@ -256,6 +292,9 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
                 // Disable the button
                 btnCaptureImg.setVisibility(SurfaceView.INVISIBLE);
                 break;
+            case R.id.btnCalibrate:
+                calibrateCamera();
+                break;
         }
     }
 
@@ -283,13 +322,18 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
 
     // Detecting the chessboard pattern in a Mat variable, corners are saved to the imageCorners variable, returns true if chessboard is detected
     public boolean chessboardDetection(Mat img_result) {
-        Size boardSize = new Size(9,6);
-        MatOfPoint2f imageCorners = new MatOfPoint2f();
         boolean found = calib.findChessboardCorners(img_result, boardSize, imageCorners, Calib3d.CALIB_CB_ADAPTIVE_THRESH + Calib3d.CALIB_CB_NORMALIZE_IMAGE + Calib3d.CALIB_CB_FAST_CHECK);
 
-        imageCorners.release();
-        img_result.release();
+        if(found) {
+            // When a chessboard has been detected, save the imageCorners by adding it to the list of corners
+            imagePoints.add(imageCorners);
+            Log.i("Lists", "Items in imagePoints list: " + imagePoints.size());
+            objectPoints.add(obj);
+            Log.i("Lists", "Items in objectPoints list: " + objectPoints.size());
+            img_result.copyTo(savedImage); /* This is for saving the size? Should be easier than saving every time */
+        }
 
+        img_result.release();
         return found;
     }
 
@@ -297,6 +341,7 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
     public void onCameraViewStarted(int width, int height) {
         Log.d("Camera", "onCameraViewStarted");
         mRGBA = new Mat(height, width, CvType.CV_8UC4);
+        //Log.i("mRGBA size", "Size on camera start: Height: " + height + ", Width: " + width); /* 720x960 */
     }
 
     @Override
@@ -308,12 +353,40 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         Log.d("Camera", "onCameraFrame");
-        if(chessboardDetection(inputFrame.rgba())) {
-            Log.d("Chessboard", "Chessboard true");
+
+        boolean found;
+
+        // Grab the frame shown in the camera and assign it to the mRGBA variable
+        mRGBA = inputFrame.rgba();
+
+        // Create a new Mat for grayscale
+        Mat grayImage = new Mat();
+
+        cameraCounter++;
+        // Limit the fps, increase the number for less fps -> should help with processing speed
+        if(cameraCounter < 6) {
+            return null;
         } else {
-            Log.d("Chessboard", "Chessboard false");
+            if(!calibrated) {
+                // Convert to gray image for faster processing
+                Imgproc.cvtColor(mRGBA, grayImage, Imgproc.COLOR_BGR2GRAY);
+
+                // Find the chessboard in the live view
+                found = chessboardDetection(grayImage);
+                if (found) {
+                    Log.d("Chessboard", "Chessboard true");
+                    Calib3d.drawChessboardCorners(mRGBA, boardSize, imageCorners, found);
+                } else {
+                    Log.d("Chessboard", "Chessboard false");
+                }
+                return mRGBA;
+            } else {
+                /*Mat undistorted = new Mat();
+                Calib3d.undistort(mRGBA, undistorted, intrinsic, distCoeffs);*/
+
+                return mRGBA;
+            }
         }
-        return inputFrame.rgba();
     }
 
     @Override
@@ -351,5 +424,16 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
             Log.d("OpenCV", "OpenCV is not working");
             OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION, getContext(), baseLoaderCallback);
         }
+    }
+
+    public void calibrateCamera() {
+        javaCameraView.disableView();
+        List<Mat> rvecs = new ArrayList<>();
+        List<Mat> tvecs = new ArrayList<>();
+        intrinsic.put(0, 0, 1);
+        intrinsic.put(1, 1, 1);
+        // calibrate;
+        Calib3d.calibrateCamera(objectPoints, imagePoints, savedImage.size(), intrinsic, distCoeffs, rvecs, tvecs);
+        calibrated = true;
     }
 }
