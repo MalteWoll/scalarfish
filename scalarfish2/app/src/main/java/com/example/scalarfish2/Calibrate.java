@@ -381,10 +381,10 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
                 }
                 return mRGBA;
             } else {
-                Mat undistorted = new Mat();
-                Calib3d.undistort(mRGBA, undistorted, intrinsic, distCoeffs);
+                /*Mat undistorted = new Mat();
+                Calib3d.undistort(mRGBA, undistorted, intrinsic, distCoeffs);*/
 
-                return undistorted;
+                return mRGBA;
             }
         }
     }
@@ -427,6 +427,7 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
     }
 
     public void calibrateCamera() {
+        javaCameraView.disableView();
         List<Mat> rvecs = new ArrayList<>();
         List<Mat> tvecs = new ArrayList<>();
         intrinsic.put(0, 0, 1);
