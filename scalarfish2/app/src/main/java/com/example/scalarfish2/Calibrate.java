@@ -347,6 +347,11 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         Log.d("Camera", "onCameraFrame");
+        if(chessboardDetection(inputFrame.rgba())) {
+            Log.d("Chessboard", "Chessboard pattern detected!");
+        } else {
+            Log.d("Chessboard", "No chessboard pattern detected!");
+        }
         return inputFrame.rgba();
     }
 
