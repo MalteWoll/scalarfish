@@ -258,16 +258,7 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
                 break;
         }
     }
-    
 
-    // After taking the image, set the image view to the URI of the image
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        imgView.setImageBitmap(openCvCannyFilter(photoFile));
-        //imgView.setImageBitmap(calibration((photoFile)));
-        //imgView.setImageURI(photoURI);
-        //calibration(photoFile);
-    }
 
     // Testing openCV with a filter
     public Bitmap openCvCannyFilter(File imgFile) {
@@ -290,37 +281,7 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
         return img_bitmap;
     }
 
-    public void calibration(File imgFile) {
-        Mat img = new Mat();
-
-        // Get the image and convert it to a bitmap
-        Bitmap srcBitmap = BitmapFactory.decodeFile(imgFile.getAbsolutePath());
-        Bitmap bmp32 = srcBitmap.copy(Bitmap.Config.ARGB_8888, true);
-        Utils.bitmapToMat(bmp32, img);
-
-        // Create a grayscale copy of the image
-        // img_result = img.clone();
-        Imgproc.cvtColor(img, img, Imgproc.COLOR_RGB2GRAY);
-
-        //img.release();
-
-        // Finding the corners of the chessboard
-        if(chessboardDetection(img)) {
-            Log.i("Chessboard info", "Corners found");
-        } else {
-            Log.i("Chessboard info", "Corners not found");
-        }
-
-        img.release();
-        System.gc();
-
-        // Convert the Mat to a bitmap and return it
-        /*Bitmap img_bitmap = Bitmap.createBitmap(img_result.cols(), img_result.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(img_result, img_bitmap);*/
-
-        //return img_bitmap;
-    }
-
+    // Detecting the chessboard pattern in a Mat variable, corners are saved to the imageCorners variable, returns true if chessboard is detected
     public boolean chessboardDetection(Mat img_result) {
         Size boardSize = new Size(9,6);
         MatOfPoint2f imageCorners = new MatOfPoint2f();
@@ -348,9 +309,9 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         Log.d("Camera", "onCameraFrame");
         if(chessboardDetection(inputFrame.rgba())) {
-            Log.d("Chessboard", "Chessboard pattern detected!");
+            Log.d("Chessboard", "Chessboard true");
         } else {
-            Log.d("Chessboard", "No chessboard pattern detected!");
+            Log.d("Chessboard", "Chessboard false");
         }
         return inputFrame.rgba();
     }
