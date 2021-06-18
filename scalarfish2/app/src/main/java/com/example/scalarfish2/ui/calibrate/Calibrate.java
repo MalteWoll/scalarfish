@@ -1,4 +1,4 @@
-package com.example.scalarfish2;
+package com.example.scalarfish2.ui.calibrate;
 
 import android.Manifest;
 import android.content.Intent;
@@ -23,6 +23,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
+
+import com.example.scalarfish2.R;
 
 import java.io.File;
 import java.io.IOException;
@@ -61,8 +63,6 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
     String currentPhotoPath;
     Uri photoURI;
     File photoFile;
-
-    Calib3d calib = new Calib3d(); /* calibration object */
 
     // OpenCV camera
     private JavaCameraView javaCameraView; /* the camera we are going to use instead of the android camera */
@@ -208,6 +208,21 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
     }
 
     @Override
+    public void onClick(View v) {
+        switch(v.getId()) {
+            case R.id.btnCaptureImg:
+                // Make the OpenCV camera view visible when the button is pressed
+                javaCameraView.setVisibility(SurfaceView.VISIBLE);
+                // Disable the button
+                btnCaptureImg.setVisibility(SurfaceView.INVISIBLE);
+                break;
+            case R.id.btnCalibrate:
+                calibrateCamera();
+                break;
+        }
+    }
+
+    @Override
     public void onRequestPermissionsResult(
             int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
 
@@ -269,21 +284,6 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
         }
     }
 
-    @Override
-    public void onClick(View v) {
-        switch(v.getId()) {
-            case R.id.btnCaptureImg:
-                // Make the OpenCV camera view visible when the button is pressed
-                javaCameraView.setVisibility(SurfaceView.VISIBLE);
-                // Disable the button
-                btnCaptureImg.setVisibility(SurfaceView.INVISIBLE);
-                break;
-            case R.id.btnCalibrate:
-                calibrateCamera();
-                break;
-        }
-    }
-
 
     // Testing openCV with a filter
     public Bitmap openCvCannyFilter(File imgFile) {
@@ -308,20 +308,21 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
 
     // Detecting the chessboard pattern in a Mat variable, corners are saved to the imageCorners variable, returns true if chessboard is detected
     public boolean chessboardDetection(Mat img_result) {
-        boolean found = calib.findChessboardCorners(img_result, boardSize, imageCorners, Calib3d.CALIB_CB_ADAPTIVE_THRESH + Calib3d.CALIB_CB_NORMALIZE_IMAGE + Calib3d.CALIB_CB_FAST_CHECK);
+        boolean found = Calib3d.findChessboardCorners(img_result, boardSize, imageCorners, Calib3d.CALIB_CB_ADAPTIVE_THRESH + Calib3d.CALIB_CB_NORMALIZE_IMAGE + Calib3d.CALIB_CB_FAST_CHECK);
 
         if(found) {
             // When a chessboard has been detected, save the imageCorners by adding it to the list of corners
             imagePoints.add(imageCorners);
+            objectPoints.add(obj);
+
             Log.i("Lists", "Items in imagePoints list: " + imagePoints.size());
             Log.i("imagePoints", "imagePoints Cols: " + imageCorners.cols() + ", Rows: " + imageCorners.rows());
-            objectPoints.add(obj);
             Log.i("Lists", "Items in objectPoints list: " + objectPoints.size());
             Log.i("objectPoints", "obj Cols: " + obj.cols() + ", Rows: " + obj.rows());
+
             img_result.copyTo(savedImage); /* This is for saving the size? There should be an easier way than saving every time */
         }
-
-        img_result.release();
+        img_result.release(); /* Release the matrix manually, since Java doesn't detect the size behind it */
         return found;
     }
 
@@ -418,12 +419,12 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
         // Not disabling the camera freezes the app
         javaCameraView.disableView();
 
-        List<Mat> rvecs = new ArrayList<>();
+        /*List<Mat> rvecs = new ArrayList<>();
         List<Mat> tvecs = new ArrayList<>();
         intrinsic.put(0, 0, 1);
         intrinsic.put(1, 1, 1);
         // calibrate
         Calib3d.calibrateCamera(objectPoints, imagePoints, savedImage.size(), intrinsic, distCoeffs, rvecs, tvecs);
-        calibrated = true;
+        calibrated = true;*/
     }
 }

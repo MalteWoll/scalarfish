@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -15,10 +16,14 @@ import androidx.lifecycle.ViewModelProvider;
 import com.example.scalarfish2.R;
 import com.example.scalarfish2.databinding.FragmentHomeBinding;
 
-public class HomeFragment extends Fragment {
+public class HomeFragment extends Fragment implements View.OnClickListener {
 
     private HomeViewModel homeViewModel;
     private FragmentHomeBinding binding;
+
+    View view;
+    Button btnCalibrate;
+    Button btnStart;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -35,7 +40,24 @@ public class HomeFragment extends Fragment {
                 textView.setText(s);
             }
         });
+
+        view = inflater.inflate(R.layout.fragment_home, container, false);
+
+        btnCalibrate = (Button) view.findViewById(R.id.btnCalibrate);
+        btnStart = (Button) view.findViewById(R.id.btnCamera);
         return root;
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.btnCalibrate:
+
+                break;
+            case R.id.btnCamera:
+
+                break;
+        }
     }
 
     @Override
