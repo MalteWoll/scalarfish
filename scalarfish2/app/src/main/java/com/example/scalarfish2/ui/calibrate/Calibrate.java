@@ -9,6 +9,7 @@ import android.net.Uri;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
@@ -159,6 +160,9 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
 
         view = inflater.inflate(R.layout.fragment_calibrate, container, false);
 
+        // When loading the fragment, no matter from where, change the title
+        ((AppCompatActivity)getActivity()).getSupportActionBar().setTitle("Calibration");
+
         // Get the button for capturing a calibration image and set the listener
         btnCaptureImg = (Button) view.findViewById(R.id.btnCaptureImg);
         btnCaptureImg.setOnClickListener(this);
@@ -180,7 +184,6 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
         if (ContextCompat.checkSelfPermission(getContext(),
                 Manifest.permission.CAMERA)
                 != PackageManager.PERMISSION_GRANTED) {
-
             // Permission is not granted
             // Should we show an explanation?
             if (ActivityCompat.shouldShowRequestPermissionRationale(getActivity(),
@@ -193,7 +196,6 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
                 ActivityCompat.requestPermissions(getActivity(),
                         new String[]{Manifest.permission.CAMERA},
                         PERMISSIONS_READ_CAMERA);
-
                 // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
                 // app-defined int constant. The callback method gets the
                 // result of the request.
@@ -203,7 +205,6 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
             javaCameraView.setCameraPermissionGranted();
             // Permission has already been granted
         }
-
         return view;
     }
 
