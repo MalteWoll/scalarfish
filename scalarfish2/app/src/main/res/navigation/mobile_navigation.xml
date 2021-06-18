@@ -24,7 +24,7 @@
         tools:layout="@layout/fragment_calibrate" />
     <fragment
         android:id="@+id/nav_camera"
-        android:name="com.example.scalarfish2.Camera"
+        android:name="com.example.scalarfish2.ui.camera.Camera"
         android:label="fragment_camera"
         tools:layout="@layout/fragment_camera" />
 </navigation>

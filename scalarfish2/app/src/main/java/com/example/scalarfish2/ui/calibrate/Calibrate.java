@@ -177,7 +177,10 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
         // Set the front camera to the one that will be used
         javaCameraView.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_BACK);
 
+        //javaCameraView.enableFpsMeter();
+
         // Get the image view to display the captured image on
+        // This is not used at the moment
         imgView = (ImageView) view.findViewById(R.id.imgViewCalibration);
 
         // Permission check for camera
@@ -316,10 +319,12 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
             imagePoints.add(imageCorners);
             objectPoints.add(obj);
 
-            Log.i("Lists", "Items in imagePoints list: " + imagePoints.size());
+            /*Log.i("Lists", "Items in imagePoints list: " + imagePoints.size());
             Log.i("imagePoints", "imagePoints Cols: " + imageCorners.cols() + ", Rows: " + imageCorners.rows());
             Log.i("Lists", "Items in objectPoints list: " + objectPoints.size());
-            Log.i("objectPoints", "obj Cols: " + obj.cols() + ", Rows: " + obj.rows());
+            Log.i("objectPoints", "obj Cols: " + obj.cols() + ", Rows: " + obj.rows());*/
+
+            //Log.i("Lists", "imagePoints: " + imageCorners.dump());
 
             img_result.copyTo(savedImage); /* This is for saving the size? There should be an easier way than saving every time */
         }
