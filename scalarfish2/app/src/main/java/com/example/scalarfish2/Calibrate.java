@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.media.Image;
 import android.net.Uri;
 import android.os.Bundle;
 
@@ -19,36 +18,28 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.Toast;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.JavaCameraView;
-import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
-import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.core.MatOfByte;
 import org.opencv.core.Size;
 import org.opencv.core.MatOfPoint2f;
-import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.calib3d.*;
 import org.opencv.core.MatOfPoint3f;
@@ -61,48 +52,43 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
     static final int REQUEST_IMAGE_CAPTURE = 1;
 
     // For accessing the elements in the fragment
-    ImageView imgView;
-    View view;
-    Button btnCaptureImg;
-    Button btnCalibrate;
+    ImageView imgView; /* This is not needed, for now, since we are live capturing the images */
+    View view; /* The view everything is in */
+    Button btnCaptureImg; /* button to start the image capture process with */
+    Button btnCalibrate; /* button to start the calibration process with */
 
-    // For creating a path to save the image to
+    // For creating a path to save the image to, not needed for now
     String currentPhotoPath;
-
     Uri photoURI;
     File photoFile;
 
-    Calib3d calib = new Calib3d();
+    Calib3d calib = new Calib3d(); /* calibration object */
 
     // OpenCV camera
-    private JavaCameraView javaCameraView;
-    private Mat mRGBA, mRGBAT;
+    private JavaCameraView javaCameraView; /* the camera we are going to use instead of the android camera */
+    private Mat mRGBA; /* a matrix for copying the values of the current frame of the camera to */
     private final int PERMISSIONS_READ_CAMERA=1;
     int cameraCounter = 0; /* for counting and reducing fps */
 
     // Calibration values
-    // The size of the chessboard
-    Size boardSize = new Size(9,6);
-    // A matrix for detecting the corners
-    MatOfPoint2f imageCorners = new MatOfPoint2f();
-    MatOfPoint3f obj = new MatOfPoint3f();
-    // A list of matrices for saving the image corners of every captured chessboard
-    List<Mat> imagePoints = new ArrayList<>();
-    List<Mat> objectPoints = new ArrayList<>();
+    Size boardSize = new Size(9,6); /* The size of the chessboard */
+    MatOfPoint2f imageCorners = new MatOfPoint2f(); /* A matrix for detecting the corners */
+    MatOfPoint3f obj = new MatOfPoint3f(); /* 3d matrix */
 
-    // What does this mean?
-    Mat intrinsic = new Mat(3, 3, CvType.CV_32FC1);
-    Mat distCoeffs = new Mat();
+    List<Mat> imagePoints = new ArrayList<>(); /* A list of matrices for saving the image corners of every captured chessboard */
+    List<Mat> objectPoints = new ArrayList<>(); /* List of 3d matrices */
 
-    Mat savedImage = new Mat();
+    Mat intrinsic = new Mat(3, 3, CvType.CV_32FC1); /* Intrinsic camera values? */
+    Mat distCoeffs = new Mat(); /* The final matrix for undistorting images */
+    Mat savedImage = new Mat(); /* saving a captured image from the camera for setting the image dimensions when calibrating */
 
     boolean calibrated;
 
+    // The following are created by AndroidStudio automatically. They can probably be deleted.
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
     private static final String ARG_PARAM2 = "param2";
-
     // TODO: Rename and change types of parameters
     private String mParam1;
     private String mParam2;
@@ -328,9 +314,11 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
             // When a chessboard has been detected, save the imageCorners by adding it to the list of corners
             imagePoints.add(imageCorners);
             Log.i("Lists", "Items in imagePoints list: " + imagePoints.size());
+            Log.i("imagePoints", "imagePoints Cols: " + imageCorners.cols() + ", Rows: " + imageCorners.rows());
             objectPoints.add(obj);
             Log.i("Lists", "Items in objectPoints list: " + objectPoints.size());
-            img_result.copyTo(savedImage); /* This is for saving the size? Should be easier than saving every time */
+            Log.i("objectPoints", "obj Cols: " + obj.cols() + ", Rows: " + obj.rows());
+            img_result.copyTo(savedImage); /* This is for saving the size? There should be an easier way than saving every time */
         }
 
         img_result.release();
@@ -427,12 +415,14 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
     }
 
     public void calibrateCamera() {
+        // Not disabling the camera freezes the app
         javaCameraView.disableView();
+
         List<Mat> rvecs = new ArrayList<>();
         List<Mat> tvecs = new ArrayList<>();
         intrinsic.put(0, 0, 1);
         intrinsic.put(1, 1, 1);
-        // calibrate;
+        // calibrate
         Calib3d.calibrateCamera(objectPoints, imagePoints, savedImage.size(), intrinsic, distCoeffs, rvecs, tvecs);
         calibrated = true;
     }
