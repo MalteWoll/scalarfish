@@ -43,6 +43,7 @@ import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Size;
 import org.opencv.core.MatOfPoint2f;
+import org.opencv.core.TermCriteria;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.calib3d.*;
 import org.opencv.core.MatOfPoint3f;
@@ -74,6 +75,7 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
     // Calibration values
     Size boardSize = new Size(9,6); /* The size of the chessboard */
     MatOfPoint2f imageCorners = new MatOfPoint2f(); /* A matrix for detecting the corners */
+    MatOfPoint2f imageCornerCopy = new MatOfPoint2f();
     MatOfPoint3f obj = new MatOfPoint3f(); /* 3d matrix */
 
     List<Mat> imagePoints = new ArrayList<>(); /* A list of matrices for saving the image corners of every captured chessboard */
@@ -316,15 +318,21 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
 
         if(found) {
             // When a chessboard has been detected, save the imageCorners by adding it to the list of corners
+            //Log.i("imageCorners", imageCorners.toString());
+            //Log.i("imageCorners", imageCorners.dump());
+
             imagePoints.add(imageCorners);
+            imageCornerCopy = imageCorners;
+            imageCorners = new MatOfPoint2f(); /* WHYYY???? */
+
             objectPoints.add(obj);
 
-            Log.i("Lists", "Items in imagePoints list: " + imagePoints.size());
+            //Log.i("Lists", "Items in imagePoints list: " + imagePoints.size());
             //Log.i("imagePoints", "imagePoints Cols: " + imageCorners.cols() + ", Rows: " + imageCorners.rows());
-            Log.i("Lists", "Items in objectPoints list: " + objectPoints.size());
+            //Log.i("Lists", "Items in objectPoints list: " + objectPoints.size());
             //Log.i("objectPoints", "obj Cols: " + obj.cols() + ", Rows: " + obj.rows());
 
-            Log.i("Lists", "imagePoints: " + imageCorners.dump());
+            //Log.i("Lists", "imagePoints: " + imageCorners.dump());
 
             img_result.copyTo(savedImage); /* This is for saving the size? There should be an easier way than saving every time */
         }
@@ -370,16 +378,16 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
                 found = chessboardDetection(grayImage);
                 if (found) {
                     Log.d("Chessboard", "Chessboard true");
-                    Calib3d.drawChessboardCorners(mRGBA, boardSize, imageCorners, found);
+                    Calib3d.drawChessboardCorners(mRGBA, boardSize, imageCornerCopy, found);
                 } else {
                     Log.d("Chessboard", "Chessboard false");
                 }
                 return mRGBA;
             } else {
-                /*Mat undistorted = new Mat();
-                Calib3d.undistort(mRGBA, undistorted, intrinsic, distCoeffs);*/
+                Mat undistorted = new Mat();
+                Calib3d.undistort(mRGBA, undistorted, intrinsic, distCoeffs);
 
-                return mRGBA;
+                return undistorted;
             }
         }
     }
@@ -423,7 +431,17 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
 
     public void calibrateCamera() {
         // Not disabling the camera freezes the app
-        javaCameraView.disableView();
+        //javaCameraView.disableView();
+
+        Log.i("ImagePoints", "Image Points list content: " + imagePoints.size() + " elements");
+        for(int i = 0; i < imagePoints.size(); i++) {
+            Log.i("ImagePoints", "Element " + i + ":" + imagePoints.get(i).dump());
+        }
+
+        /*Log.i("Object Points", "Object Points list content: " + objectPoints.size() + " elements");
+        for(int i = 0; i < objectPoints.size(); i++) {
+            Log.i("Object Points", "Element " + i + ":" + objectPoints.get(i).dump());
+        }*/
 
         List<Mat> rvecs = new ArrayList<>();
         List<Mat> tvecs = new ArrayList<>();
@@ -432,5 +450,6 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
         // calibrate
         Calib3d.calibrateCamera(objectPoints, imagePoints, savedImage.size(), intrinsic, distCoeffs, rvecs, tvecs);
         calibrated = true;
+        Log.i("distCoeffs", distCoeffs.dump());
     }
 }
