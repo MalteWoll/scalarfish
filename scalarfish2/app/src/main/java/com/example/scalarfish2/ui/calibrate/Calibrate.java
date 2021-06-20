@@ -319,12 +319,12 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
             imagePoints.add(imageCorners);
             objectPoints.add(obj);
 
-            /*Log.i("Lists", "Items in imagePoints list: " + imagePoints.size());
-            Log.i("imagePoints", "imagePoints Cols: " + imageCorners.cols() + ", Rows: " + imageCorners.rows());
+            Log.i("Lists", "Items in imagePoints list: " + imagePoints.size());
+            //Log.i("imagePoints", "imagePoints Cols: " + imageCorners.cols() + ", Rows: " + imageCorners.rows());
             Log.i("Lists", "Items in objectPoints list: " + objectPoints.size());
-            Log.i("objectPoints", "obj Cols: " + obj.cols() + ", Rows: " + obj.rows());*/
+            //Log.i("objectPoints", "obj Cols: " + obj.cols() + ", Rows: " + obj.rows());
 
-            //Log.i("Lists", "imagePoints: " + imageCorners.dump());
+            Log.i("Lists", "imagePoints: " + imageCorners.dump());
 
             img_result.copyTo(savedImage); /* This is for saving the size? There should be an easier way than saving every time */
         }
@@ -425,12 +425,12 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
         // Not disabling the camera freezes the app
         javaCameraView.disableView();
 
-        /*List<Mat> rvecs = new ArrayList<>();
+        List<Mat> rvecs = new ArrayList<>();
         List<Mat> tvecs = new ArrayList<>();
         intrinsic.put(0, 0, 1);
         intrinsic.put(1, 1, 1);
         // calibrate
         Calib3d.calibrateCamera(objectPoints, imagePoints, savedImage.size(), intrinsic, distCoeffs, rvecs, tvecs);
-        calibrated = true;*/
+        calibrated = true;
     }
 }
