@@ -5,6 +5,9 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.hardware.Camera;
+import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CameraManager;
 import android.net.Uri;
 import android.os.Bundle;
 
@@ -229,6 +232,7 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
 
     // Creates an unique image file name
     // Not sure if this is still required, since we capture images from the live view without saving them first
+    // The only thing that needs to be saved in this fragment is the distortion matrix
     private File createImageFile() throws IOException {
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         String imageFileName = "JPEG_" + timeStamp + "_";
@@ -269,9 +273,8 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
         }
     }
 
-
     // Testing openCV with a filter
-    // Don't delete yet, some bmp -> Mat and reverse might be useful
+    // Don't delete yet, some bmp -> Mat and reverse might be useful for later
     public Bitmap openCvCannyFilter(File imgFile) {
         Mat img = new Mat();
 
@@ -300,6 +303,8 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
             // When a chessboard has been detected, save the imageCorners by adding it to the list of corners
             //Log.i("imageCorners", imageCorners.toString());
             //Log.i("imageCorners", imageCorners.dump());
+
+            // TODO: Apply functions from https://opencv-java-tutorials.readthedocs.io/en/latest/09-camera-calibration.html for better calibration result (cornerSubPix)
 
             imagePoints.add(imageCorners);
             imageCornerCopy = imageCorners;
@@ -349,6 +354,7 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
         if(cameraCounter < 6) {
             return null;
         } else {
+            //Log.i("ImgSize", "Center: " + mRGBA.width()/2 + ", " + mRGBA.height() / 2);
             if(!calibrated) {
                 // Convert to gray image for faster processing
                 Imgproc.cvtColor(mRGBA, grayImage, Imgproc.COLOR_BGR2GRAY);
@@ -409,7 +415,7 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
     }
 
     public void calibrateCamera() {
-        // Not disabling the camera freezes the app
+        // Not disabling the camera froze the app previously, now it works. Disabling might still be advisable, because the calibration takes a moment.
         //javaCameraView.disableView();
 
         Log.i("ImagePoints", "Image Points list content: " + imagePoints.size() + " elements");
@@ -422,10 +428,12 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
             Log.i("Object Points", "Element " + i + ":" + objectPoints.get(i).dump());
         }*/
 
+
+
         List<Mat> rvecs = new ArrayList<>();
         List<Mat> tvecs = new ArrayList<>();
-        intrinsic.put(0, 0, 1);
-        intrinsic.put(1, 1, 1);
+        intrinsic.put(0, 0, 2);
+        intrinsic.put(1, 1, 2);
         // calibrate
         Calib3d.calibrateCamera(objectPoints, imagePoints, savedImage.size(), intrinsic, distCoeffs, rvecs, tvecs);
         calibrated = true;
