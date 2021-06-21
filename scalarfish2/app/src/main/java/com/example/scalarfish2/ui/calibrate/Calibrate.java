@@ -87,15 +87,7 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
 
     boolean calibrated;
 
-    // The following are created by AndroidStudio automatically. They can probably be deleted.
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
-
+    // For enabling the camera view
     BaseLoaderCallback baseLoaderCallback = new BaseLoaderCallback(getContext()) {
         @Override
         public void onManagerConnected(int status) {
@@ -123,20 +115,9 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
         // Required empty public constructor
     }
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment Calibrate.
-     */
-    // TODO: Rename and change types and number of parameters
     public static Calibrate newInstance(String param1, String param2) {
         Calibrate fragment = new Calibrate();
         Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
         fragment.setArguments(args);
         return fragment;
     }
@@ -145,8 +126,6 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
         }
 
         // Calculate the number of squares on the board
@@ -292,6 +271,7 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
 
 
     // Testing openCV with a filter
+    // Don't delete yet, some bmp -> Mat and reverse might be useful
     public Bitmap openCvCannyFilter(File imgFile) {
         Mat img = new Mat();
 
@@ -331,7 +311,6 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
             //Log.i("imagePoints", "imagePoints Cols: " + imageCorners.cols() + ", Rows: " + imageCorners.rows());
             //Log.i("Lists", "Items in objectPoints list: " + objectPoints.size());
             //Log.i("objectPoints", "obj Cols: " + obj.cols() + ", Rows: " + obj.rows());
-
             //Log.i("Lists", "imagePoints: " + imageCorners.dump());
 
             img_result.copyTo(savedImage); /* This is for saving the size? There should be an easier way than saving every time */
