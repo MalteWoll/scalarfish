@@ -341,6 +341,8 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         Log.d("Camera", "onCameraFrame");
 
+        // TODO: Autofokussierung deaktivieren!
+
         boolean found;
 
         // Grab the frame shown in the camera and assign it to the mRGBA variable
@@ -418,20 +420,21 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
         // Not disabling the camera froze the app previously, now it works. Disabling might still be advisable, because the calibration takes a moment.
         //javaCameraView.disableView();
 
-        Log.i("ImagePoints", "Image Points list content: " + imagePoints.size() + " elements");
+        /*Log.i("ImagePoints", "Image Points list content: " + imagePoints.size() + " elements");
         for(int i = 0; i < imagePoints.size(); i++) {
             Log.i("ImagePoints", "Element " + i + ":" + imagePoints.get(i).dump());
-        }
+        }*/
 
         /*Log.i("Object Points", "Object Points list content: " + objectPoints.size() + " elements");
         for(int i = 0; i < objectPoints.size(); i++) {
             Log.i("Object Points", "Element " + i + ":" + objectPoints.get(i).dump());
         }*/
 
-
-
         List<Mat> rvecs = new ArrayList<>();
         List<Mat> tvecs = new ArrayList<>();
+
+        // TODO: Focal length = fx, fy
+
         intrinsic.put(0, 0, 2);
         intrinsic.put(1, 1, 2);
         // calibrate
