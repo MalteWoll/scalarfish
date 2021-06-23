@@ -19,6 +19,8 @@ import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Message;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -430,16 +432,36 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
             Log.i("Object Points", "Element " + i + ":" + objectPoints.get(i).dump());
         }*/
 
-        List<Mat> rvecs = new ArrayList<>();
-        List<Mat> tvecs = new ArrayList<>();
+        // Create a new thread to calculate the result in that is no the main UI thread. This makes the calculation faster and stops the app from freezing.
+        Thread calibrateThread = new Thread() {
+            public void run() {
+                List<Mat> rvecs = new ArrayList<>();
+                List<Mat> tvecs = new ArrayList<>();
+                // TODO: Focal length = fx, fy
+                intrinsic.put(0, 0, 1);
+                intrinsic.put(1, 1, 1);
+                // calibrate
+                Calib3d.calibrateCamera(objectPoints, imagePoints, savedImage.size(), intrinsic, distCoeffs, rvecs, tvecs);
 
-        // TODO: Focal length = fx, fy
+                Message message = new Message();
+                Bundle bundle = new Bundle();
+                bundle.putString("Calibrationresult", "Success");
+                message.setData(bundle);
+                handler.sendMessage(message);
+            }
+        };
 
-        intrinsic.put(0, 0, 2);
-        intrinsic.put(1, 1, 2);
-        // calibrate
-        Calib3d.calibrateCamera(objectPoints, imagePoints, savedImage.size(), intrinsic, distCoeffs, rvecs, tvecs);
-        calibrated = true;
-        Log.i("distCoeffs", distCoeffs.dump());
+        calibrateThread.start();
     }
+
+    private Handler handler = new Handler() {
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            Bundle bundle = msg.getData();
+            String result = bundle.getString("CalibrationResult");
+            Log.i("CalibrationResult", "Calibration successful");
+            Log.i("distCoeffs", distCoeffs.dump());
+            calibrated = true;
+        }
+    };
 }
