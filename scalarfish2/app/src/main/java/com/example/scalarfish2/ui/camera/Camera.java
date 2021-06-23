@@ -1,14 +1,23 @@
 package com.example.scalarfish2.ui.camera;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
 import com.example.scalarfish2.R;
+
+import org.opencv.android.BaseLoaderCallback;
+import org.opencv.android.JavaCameraView;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -17,33 +26,49 @@ import com.example.scalarfish2.R;
  */
 public class Camera extends Fragment {
 
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
+    // Camera request code
+    private static final int MY_CAMERA_REQUEST_CODE = 100;
 
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
+    // For image capturing
+    static final int REQUEST_IMAGE_CAPTURE = 1;
+
+    // Interface
+    View view; /* The view everything is in */
+
+    // OpenCV camera
+    private JavaCameraView javaCameraView; /* the camera we are going to use instead of the android camera */
+    private final int PERMISSIONS_READ_CAMERA=1;
 
     public Camera() {
         // Required empty public constructor
     }
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment Camera.
-     */
-    // TODO: Rename and change types and number of parameters
+    // For enabling the camera view
+    BaseLoaderCallback baseLoaderCallback = new BaseLoaderCallback(getContext()) {
+        @Override
+        public void onManagerConnected(int status) {
+            Log.d("Callback", "callbacksuccess");
+            switch (status)
+            {
+                case BaseLoaderCallback.SUCCESS:
+                {
+                    Log.d("Callback", "case success");
+                    javaCameraView.enableView();
+                    break;
+                }
+                default:
+                {
+                    Log.d("Callback", "case default");
+                    super.onManagerConnected(status);
+                    break;
+                }
+            }
+        }
+    };
+
     public static Camera newInstance(String param1, String param2) {
         Camera fragment = new Camera();
         Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
         fragment.setArguments(args);
         return fragment;
     }
@@ -52,8 +77,6 @@ public class Camera extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
         }
     }
 
@@ -61,6 +84,37 @@ public class Camera extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_camera, container, false);
+        view = inflater.inflate(R.layout.fragment_camera, container, false);
+
+        // When loading the fragment, no matter from where, change the title
+        ((AppCompatActivity)getActivity()).getSupportActionBar().setTitle("Camera");
+
+        // Permission check for camera
+        if (ContextCompat.checkSelfPermission(getContext(),
+                Manifest.permission.CAMERA)
+                != PackageManager.PERMISSION_GRANTED) {
+            // Permission is not granted
+            // Should we show an explanation?
+            if (ActivityCompat.shouldShowRequestPermissionRationale(getActivity(),
+                    Manifest.permission.CAMERA)) {
+                // Show an explanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+            } else {
+                // No explanation needed, we can request the permission.
+                ActivityCompat.requestPermissions(getActivity(),
+                        new String[]{Manifest.permission.CAMERA},
+                        PERMISSIONS_READ_CAMERA);
+                // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
+                // app-defined int constant. The callback method gets the
+                // result of the request.
+            }
+        } else {
+            Log.d("Permissions", "Permissions granted");
+            javaCameraView.setCameraPermissionGranted();
+            // Permission has already been granted
+        }
+
+        return view;
     }
 }

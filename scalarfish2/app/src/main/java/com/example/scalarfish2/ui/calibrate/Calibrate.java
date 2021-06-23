@@ -5,6 +5,9 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.hardware.Camera;
+import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CameraManager;
 import android.net.Uri;
 import android.os.Bundle;
 
@@ -16,6 +19,8 @@ import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Message;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -87,15 +92,7 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
 
     boolean calibrated;
 
-    // The following are created by AndroidStudio automatically. They can probably be deleted.
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
-
+    // For enabling the camera view
     BaseLoaderCallback baseLoaderCallback = new BaseLoaderCallback(getContext()) {
         @Override
         public void onManagerConnected(int status) {
@@ -123,20 +120,9 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
         // Required empty public constructor
     }
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment Calibrate.
-     */
-    // TODO: Rename and change types and number of parameters
     public static Calibrate newInstance(String param1, String param2) {
         Calibrate fragment = new Calibrate();
         Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
         fragment.setArguments(args);
         return fragment;
     }
@@ -145,8 +131,6 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
         }
 
         // Calculate the number of squares on the board
@@ -250,6 +234,7 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
 
     // Creates an unique image file name
     // Not sure if this is still required, since we capture images from the live view without saving them first
+    // The only thing that needs to be saved in this fragment is the distortion matrix
     private File createImageFile() throws IOException {
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         String imageFileName = "JPEG_" + timeStamp + "_";
@@ -290,8 +275,8 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
         }
     }
 
-
     // Testing openCV with a filter
+    // Don't delete yet, some bmp -> Mat and reverse might be useful for later
     public Bitmap openCvCannyFilter(File imgFile) {
         Mat img = new Mat();
 
@@ -321,6 +306,8 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
             //Log.i("imageCorners", imageCorners.toString());
             //Log.i("imageCorners", imageCorners.dump());
 
+            // TODO: Apply functions from https://opencv-java-tutorials.readthedocs.io/en/latest/09-camera-calibration.html for better calibration result (cornerSubPix)
+
             imagePoints.add(imageCorners);
             imageCornerCopy = imageCorners;
             imageCorners = new MatOfPoint2f(); /* WHYYY???? */
@@ -331,7 +318,6 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
             //Log.i("imagePoints", "imagePoints Cols: " + imageCorners.cols() + ", Rows: " + imageCorners.rows());
             //Log.i("Lists", "Items in objectPoints list: " + objectPoints.size());
             //Log.i("objectPoints", "obj Cols: " + obj.cols() + ", Rows: " + obj.rows());
-
             //Log.i("Lists", "imagePoints: " + imageCorners.dump());
 
             img_result.copyTo(savedImage); /* This is for saving the size? There should be an easier way than saving every time */
@@ -357,6 +343,8 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         Log.d("Camera", "onCameraFrame");
 
+        // TODO: Autofokussierung deaktivieren!
+
         boolean found;
 
         // Grab the frame shown in the camera and assign it to the mRGBA variable
@@ -370,6 +358,7 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
         if(cameraCounter < 6) {
             return null;
         } else {
+            //Log.i("ImgSize", "Center: " + mRGBA.width()/2 + ", " + mRGBA.height() / 2);
             if(!calibrated) {
                 // Convert to gray image for faster processing
                 Imgproc.cvtColor(mRGBA, grayImage, Imgproc.COLOR_BGR2GRAY);
@@ -430,26 +419,49 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
     }
 
     public void calibrateCamera() {
-        // Not disabling the camera freezes the app
+        // Not disabling the camera froze the app previously, now it works. Disabling might still be advisable, because the calibration takes a moment.
         //javaCameraView.disableView();
 
-        Log.i("ImagePoints", "Image Points list content: " + imagePoints.size() + " elements");
+        /*Log.i("ImagePoints", "Image Points list content: " + imagePoints.size() + " elements");
         for(int i = 0; i < imagePoints.size(); i++) {
             Log.i("ImagePoints", "Element " + i + ":" + imagePoints.get(i).dump());
-        }
+        }*/
 
         /*Log.i("Object Points", "Object Points list content: " + objectPoints.size() + " elements");
         for(int i = 0; i < objectPoints.size(); i++) {
             Log.i("Object Points", "Element " + i + ":" + objectPoints.get(i).dump());
         }*/
 
-        List<Mat> rvecs = new ArrayList<>();
-        List<Mat> tvecs = new ArrayList<>();
-        intrinsic.put(0, 0, 1);
-        intrinsic.put(1, 1, 1);
-        // calibrate
-        Calib3d.calibrateCamera(objectPoints, imagePoints, savedImage.size(), intrinsic, distCoeffs, rvecs, tvecs);
-        calibrated = true;
-        Log.i("distCoeffs", distCoeffs.dump());
+        // Create a new thread to calculate the result in that is no the main UI thread. This makes the calculation faster and stops the app from freezing.
+        Thread calibrateThread = new Thread() {
+            public void run() {
+                List<Mat> rvecs = new ArrayList<>();
+                List<Mat> tvecs = new ArrayList<>();
+                // TODO: Focal length = fx, fy
+                intrinsic.put(0, 0, 1);
+                intrinsic.put(1, 1, 1);
+                // calibrate
+                Calib3d.calibrateCamera(objectPoints, imagePoints, savedImage.size(), intrinsic, distCoeffs, rvecs, tvecs);
+
+                Message message = new Message();
+                Bundle bundle = new Bundle();
+                bundle.putString("Calibrationresult", "Success");
+                message.setData(bundle);
+                handler.sendMessage(message);
+            }
+        };
+
+        calibrateThread.start();
     }
+
+    private Handler handler = new Handler() {
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            Bundle bundle = msg.getData();
+            String result = bundle.getString("CalibrationResult");
+            Log.i("CalibrationResult", "Calibration successful");
+            Log.i("distCoeffs", distCoeffs.dump());
+            calibrated = true;
+        }
+    };
 }
