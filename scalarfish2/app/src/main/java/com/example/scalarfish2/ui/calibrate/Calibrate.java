@@ -29,6 +29,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 
 import com.example.scalarfish2.R;
 
@@ -42,6 +43,8 @@ import java.util.List;
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.JavaCameraView;
+import org.opencv.android.CameraActivity;
+import org.opencv.android.JavaCamera2View;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.CvType;
@@ -65,6 +68,7 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
     View view; /* The view everything is in */
     Button btnCaptureImg; /* button to start the image capture process with */
     Button btnCalibrate; /* button to start the calibration process with */
+    ProgressBar loadingSpinner; /* circular spinner, displaying calculation */
 
     // For creating a path to save the image to, not needed for now
     String currentPhotoPath;
@@ -157,11 +161,16 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
         btnCalibrate = (Button) view.findViewById(R.id.btnCalibrate);
         btnCalibrate.setOnClickListener(this);
 
+        // Get the progress bar
+        loadingSpinner = (ProgressBar) view.findViewById(R.id.progressBar);
+        loadingSpinner.setVisibility(View.INVISIBLE);
+
         // Get the OpenCV camera view in the fragment's layout
         javaCameraView = (JavaCameraView) view.findViewById(R.id.openCvCameraView);
         javaCameraView.setCvCameraViewListener(this);
         // Set the front camera to the one that will be used
         javaCameraView.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_BACK);
+
 
         //javaCameraView.enableFpsMeter();
 
@@ -207,6 +216,8 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
                 btnCaptureImg.setVisibility(SurfaceView.INVISIBLE);
                 break;
             case R.id.btnCalibrate:
+                // Make the loading spinner visible
+                loadingSpinner.setVisibility(View.VISIBLE);
                 calibrateCamera();
                 break;
         }
@@ -299,12 +310,11 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
 
     // Detecting the chessboard pattern in a Mat variable, corners are saved to the imageCorners variable, returns true if chessboard is detected
     public boolean chessboardDetection(Mat img_result) {
+        // TODO: Everything in this method on another thread
         boolean found = Calib3d.findChessboardCorners(img_result, boardSize, imageCorners, Calib3d.CALIB_CB_ADAPTIVE_THRESH + Calib3d.CALIB_CB_NORMALIZE_IMAGE + Calib3d.CALIB_CB_FAST_CHECK);
 
         if(found) {
             // When a chessboard has been detected, save the imageCorners by adding it to the list of corners
-            //Log.i("imageCorners", imageCorners.toString());
-            //Log.i("imageCorners", imageCorners.dump());
 
             // TODO: Apply functions from https://opencv-java-tutorials.readthedocs.io/en/latest/09-camera-calibration.html for better calibration result (cornerSubPix)
 
@@ -313,12 +323,6 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
             imageCorners = new MatOfPoint2f(); /* WHYYY???? */
 
             objectPoints.add(obj);
-
-            //Log.i("Lists", "Items in imagePoints list: " + imagePoints.size());
-            //Log.i("imagePoints", "imagePoints Cols: " + imageCorners.cols() + ", Rows: " + imageCorners.rows());
-            //Log.i("Lists", "Items in objectPoints list: " + objectPoints.size());
-            //Log.i("objectPoints", "obj Cols: " + obj.cols() + ", Rows: " + obj.rows());
-            //Log.i("Lists", "imagePoints: " + imageCorners.dump());
 
             img_result.copyTo(savedImage); /* This is for saving the size? There should be an easier way than saving every time */
         }
@@ -358,7 +362,6 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
         if(cameraCounter < 6) {
             return null;
         } else {
-            //Log.i("ImgSize", "Center: " + mRGBA.width()/2 + ", " + mRGBA.height() / 2);
             if(!calibrated) {
                 // Convert to gray image for faster processing
                 Imgproc.cvtColor(mRGBA, grayImage, Imgproc.COLOR_BGR2GRAY);
@@ -422,16 +425,6 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
         // Not disabling the camera froze the app previously, now it works. Disabling might still be advisable, because the calibration takes a moment.
         //javaCameraView.disableView();
 
-        /*Log.i("ImagePoints", "Image Points list content: " + imagePoints.size() + " elements");
-        for(int i = 0; i < imagePoints.size(); i++) {
-            Log.i("ImagePoints", "Element " + i + ":" + imagePoints.get(i).dump());
-        }*/
-
-        /*Log.i("Object Points", "Object Points list content: " + objectPoints.size() + " elements");
-        for(int i = 0; i < objectPoints.size(); i++) {
-            Log.i("Object Points", "Element " + i + ":" + objectPoints.get(i).dump());
-        }*/
-
         // Create a new thread to calculate the result in that is no the main UI thread. This makes the calculation faster and stops the app from freezing.
         Thread calibrateThread = new Thread() {
             public void run() {
@@ -462,6 +455,9 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
             Log.i("CalibrationResult", "Calibration successful");
             Log.i("distCoeffs", distCoeffs.dump());
             calibrated = true;
+
+            btnCalibrate.setVisibility(View.INVISIBLE);
+            loadingSpinner.setVisibility(View.INVISIBLE);
         }
     };
 }
