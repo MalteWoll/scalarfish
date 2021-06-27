@@ -27,4 +27,9 @@
         android:name="com.example.scalarfish2.ui.camera.Camera"
         android:label="fragment_camera"
         tools:layout="@layout/fragment_camera" />
+    <fragment
+        android:id="@+id/verify"
+        android:name="com.example.scalarfish2.ui.verify.Verify"
+        android:label="fragment_verify"
+        tools:layout="@layout/fragment_verify" />
 </navigation>
