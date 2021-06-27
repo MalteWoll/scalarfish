@@ -1,7 +1,9 @@
 package com.example.scalarfish2.ui.calibrate;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -17,10 +19,12 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
 
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -32,6 +36,8 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 
 import com.example.scalarfish2.R;
+import com.example.scalarfish2.databinding.FragmentHomeBinding;
+import com.example.scalarfish2.ui.verify.Verify;
 
 import java.io.File;
 import java.io.IOException;
@@ -68,6 +74,7 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
     View view; /* The view everything is in */
     Button btnCaptureImg; /* button to start the image capture process with */
     Button btnCalibrate; /* button to start the calibration process with */
+    Button btnVerify; /* button that takes the user to the verification fragment */
     ProgressBar loadingSpinner; /* circular spinner, displaying calculation */
 
     // For creating a path to save the image to, not needed for now
@@ -95,6 +102,9 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
     Mat savedImage = new Mat(); /* saving a captured image from the camera for setting the image dimensions when calibrating */
 
     boolean calibrated;
+    boolean calibInProgress = false;
+
+    private FragmentHomeBinding binding;
 
     // For enabling the camera view
     BaseLoaderCallback baseLoaderCallback = new BaseLoaderCallback(getContext()) {
@@ -161,6 +171,10 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
         btnCalibrate = (Button) view.findViewById(R.id.btnCalibrate);
         btnCalibrate.setOnClickListener(this);
 
+        btnVerify = (Button) view.findViewById(R.id.btnVerify);
+        btnVerify.setOnClickListener(this);
+        btnVerify.setVisibility(View.INVISIBLE);
+
         // Get the progress bar
         loadingSpinner = (ProgressBar) view.findViewById(R.id.progressBar);
         loadingSpinner.setVisibility(View.INVISIBLE);
@@ -218,7 +232,16 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
             case R.id.btnCalibrate:
                 // Make the loading spinner visible
                 loadingSpinner.setVisibility(View.VISIBLE);
+                btnCalibrate.setVisibility(View.INVISIBLE);
+                calibInProgress = true;
                 calibrateCamera();
+                break;
+            case R.id.btnVerify:
+                Fragment fragment = new Verify();
+                FragmentTransaction transaction = getFragmentManager().beginTransaction();
+                transaction.replace(R.id.nav_host_fragment_content_main, fragment);
+                transaction.addToBackStack(null);
+                transaction.commit();
                 break;
         }
     }
@@ -359,7 +382,7 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
 
         cameraCounter++;
         // Limit the fps, increase the number for less fps -> should help with processing speed
-        if(cameraCounter < 6) {
+        if(cameraCounter < 6 || calibInProgress) {
             return null;
         } else {
             if(!calibrated) {
@@ -402,7 +425,6 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
         {
             javaCameraView.disableView();
         }
-
     }
 
     @Override
@@ -428,6 +450,7 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
         // Create a new thread to calculate the result in that is no the main UI thread. This makes the calculation faster and stops the app from freezing.
         Thread calibrateThread = new Thread() {
             public void run() {
+
                 List<Mat> rvecs = new ArrayList<>();
                 List<Mat> tvecs = new ArrayList<>();
                 // TODO: Focal length = fx, fy
@@ -454,10 +477,27 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
             String result = bundle.getString("CalibrationResult");
             Log.i("CalibrationResult", "Calibration successful");
             Log.i("distCoeffs", distCoeffs.dump());
-            calibrated = true;
 
-            btnCalibrate.setVisibility(View.INVISIBLE);
+            Log.i("distCoeffs", distCoeffs.toString());
+
+            // Save the values of the distortion matrix to shared preferences
+            SharedPreferences prefs = getActivity().getPreferences(Context.MODE_PRIVATE);
+            SharedPreferences.Editor editor = prefs.edit();
+            for(int i = 0; i < 5; i++) {
+                double data = distCoeffs.get(0, i)[0];
+                //Log.i("distCoeffs", "Double: " + data);
+                //Log.i("distCoeffs", "String: " + String.valueOf(data));
+                //Log.i("distCoeffs", "Back to Double: " + Double.valueOf(String.valueOf(data)));
+                editor.putString("distCoeffs"+i, String.valueOf(data));
+            }
+            editor.apply();
+
+            calibrated = true;
+            calibInProgress = false;
+
+
             loadingSpinner.setVisibility(View.INVISIBLE);
+            btnVerify.setVisibility(View.VISIBLE);
         }
     };
 }
