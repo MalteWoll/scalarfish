@@ -7,9 +7,6 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.hardware.Camera;
-import android.hardware.camera2.CameraDevice;
-import android.hardware.camera2.CameraManager;
 import android.net.Uri;
 import android.os.Bundle;
 
@@ -24,7 +21,6 @@ import androidx.fragment.app.FragmentTransaction;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
-import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -49,15 +45,12 @@ import java.util.List;
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.JavaCameraView;
-import org.opencv.android.CameraActivity;
-import org.opencv.android.JavaCamera2View;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Size;
 import org.opencv.core.MatOfPoint2f;
-import org.opencv.core.TermCriteria;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.calib3d.*;
 import org.opencv.core.MatOfPoint3f;
@@ -103,6 +96,7 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
 
     boolean calibrated;
     boolean calibInProgress = false;
+    boolean debug = true;
 
     private FragmentHomeBinding binding;
 
@@ -343,6 +337,9 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
 
             imagePoints.add(imageCorners);
             imageCornerCopy = imageCorners;
+
+            //Log.i("ImageCorners", String.valueOf(imageCorners.get(36,0)[0]) + ", " + String.valueOf(imageCorners.get(36,0)[1]));
+
             imageCorners = new MatOfPoint2f(); /* WHYYY???? */
 
             objectPoints.add(obj);
@@ -368,7 +365,6 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
 
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
-        Log.d("Camera", "onCameraFrame");
 
         // TODO: Autofokussierung deaktivieren!
 
@@ -400,6 +396,13 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
                 return mRGBA;
             } else {
                 Mat undistorted = new Mat();
+
+                if(debug) {
+                    Log.i("intrinsic", intrinsic.toString());
+                    Log.i("intrinsic", intrinsic.dump());
+                    debug = false;
+                }
+
                 Calib3d.undistort(mRGBA, undistorted, intrinsic, distCoeffs);
 
                 return undistorted;
@@ -485,10 +488,16 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
             SharedPreferences.Editor editor = prefs.edit();
             for(int i = 0; i < 5; i++) {
                 double data = distCoeffs.get(0, i)[0];
-                //Log.i("distCoeffs", "Double: " + data);
+                Log.i("distCoeffs", "Double: " + data);
                 //Log.i("distCoeffs", "String: " + String.valueOf(data));
                 //Log.i("distCoeffs", "Back to Double: " + Double.valueOf(String.valueOf(data)));
                 editor.putString("distCoeffs"+i, String.valueOf(data));
+            }
+            for(int i = 0; i < 3; i++) {
+                for(int j = 0; j < 3; j++) {
+                    double data = intrinsic.get(i, j)[0];
+                    editor.putString("intrinsic"+i+j, String.valueOf(data));
+                }
             }
             editor.apply();
 

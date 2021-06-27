@@ -22,6 +22,18 @@
             opencv:layout_constraintStart_toStartOf="parent"
             opencv:layout_constraintTop_toTopOf="parent"
             opencv:show_fps="true" />
+
+        <Button
+            android:id="@+id/btnTakeImage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Take Image"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.498"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.942" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 </FrameLayout>

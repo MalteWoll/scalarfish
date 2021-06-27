@@ -16,6 +16,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 
 import com.example.scalarfish2.R;
 import com.example.scalarfish2.databinding.FragmentHomeBinding;
@@ -27,8 +28,11 @@ import org.opencv.android.OpenCVLoader;
 import org.opencv.calib3d.Calib3d;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.MatOfPoint3f;
 import org.opencv.core.Point3;
+import org.opencv.core.Size;
+import org.opencv.imgproc.Imgproc;
 
 public class Verify extends Fragment implements View.OnClickListener, CameraBridgeViewBase.CvCameraViewListener2 {
 
@@ -36,6 +40,7 @@ public class Verify extends Fragment implements View.OnClickListener, CameraBrid
     static final int REQUEST_IMAGE_CAPTURE = 1;
 
     View view;
+    Button btnTakeImg;
 
     JavaCameraView javaCameraView;
     private final int PERMISSIONS_READ_CAMERA=1;
@@ -43,7 +48,19 @@ public class Verify extends Fragment implements View.OnClickListener, CameraBrid
     int cameraCounter = 0; /* for counting and reducing fps */
 
     Mat distCoeffs = new Mat(1, 5, CvType.CV_64FC1);
-    Mat intrinsic = new Mat(3, 3, CvType.CV_32FC1); /* Intrinsic camera values? */
+    Mat intrinsic = new Mat(3, 3, CvType.CV_64FC1); /* Intrinsic camera values */
+
+    Size boardSize = new Size(9,6); /* The size of the chessboard */
+    MatOfPoint2f imageCorners = new MatOfPoint2f(); /* A matrix for detecting the corners */
+    MatOfPoint2f imageCornerCopy = new MatOfPoint2f(); /* A matrix for detecting the corners */
+    Mat savedImage = new Mat(); /* saving a captured image from the camera for setting the image dimensions when calibrating */
+
+    Mat verificationImg = new MatOfPoint2f();
+    Mat undistorted = new Mat();
+
+    boolean found = false;
+    boolean debug = true;
+
 
     public Verify() {
         // Required empty public constructor
@@ -101,6 +118,9 @@ public class Verify extends Fragment implements View.OnClickListener, CameraBrid
         // Set the front camera to the one that will be used
         javaCameraView.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_BACK);
 
+        btnTakeImg = (Button) view.findViewById(R.id.btnTakeImage);
+        btnTakeImg.setOnClickListener(this::onClick);
+
         // Permission check for camera
         if (ContextCompat.checkSelfPermission(getContext(),
                 Manifest.permission.CAMERA)
@@ -136,10 +156,15 @@ public class Verify extends Fragment implements View.OnClickListener, CameraBrid
         }
 
         Log.i("distCoeffs", distCoeffs.dump());
+        Log.i("distCoeffs", distCoeffs.toString());
 
         // Intrinsic camera parameters
-        intrinsic.put(0, 0, 1);
-        intrinsic.put(1, 1, 1);
+        for(int i = 0; i < 3; i++) {
+            for(int j = 0; j < 3; j++) {
+                String data = prefs.getString("intrinsic"+i+j, "");
+                intrinsic.put(i, j, Double.valueOf(data));
+            }
+        }
 
         return view;
     }
@@ -166,7 +191,46 @@ public class Verify extends Fragment implements View.OnClickListener, CameraBrid
 
     @Override
     public void onClick(View v) {
+        switch(v.getId()) {
+            case R.id.btnTakeImage:
+                distanceBetweenPoints();
+                javaCameraView.disableView();
+                break;
+        }
+    }
 
+    // Detecting the chessboard pattern in a Mat variable, corners are saved to the imageCorners variable, returns true if chessboard is detected
+    public boolean chessboardDetection(Mat img_result) {
+        // TODO: Everything in this method on another thread
+        boolean found = Calib3d.findChessboardCorners(img_result, boardSize, imageCorners, Calib3d.CALIB_CB_ADAPTIVE_THRESH + Calib3d.CALIB_CB_NORMALIZE_IMAGE + Calib3d.CALIB_CB_FAST_CHECK);
+
+        if(found) {
+            // When a chessboard has been detected, save the imageCorners by adding it to the list of corners
+
+            imageCornerCopy = imageCorners;
+            imageCorners = new MatOfPoint2f(); /* WHYYY???? */
+
+            img_result.copyTo(savedImage); /* This is for saving the size? There should be an easier way than saving every time */
+        }
+        img_result.release(); /* Release the matrix manually, since Java doesn't detect the size behind it */
+        return found;
+    }
+
+    public void distanceBetweenPoints() {
+        boolean chessboardFound = chessboardDetection(savedImage);
+        Log.i("inMethod", "distBetweenPoints");
+        if(chessboardFound) {
+            Log.i("inMethod", "distBetweenPoints - chessboard found");
+            //Log.i("imageCorners", imageCornerCopy.dump());
+            for(int i = 0; i < (boardSize.width * boardSize.height - 1); i++) {
+                double pow1 = Math.pow((imageCornerCopy.get(i,0)[1] - imageCornerCopy.get(i,0)[0]), 2);
+                double pow2 = Math.pow((imageCornerCopy.get(i+1,0)[0] - imageCornerCopy.get(i+1,0)[1]), 2);
+                double dist = Math.sqrt(pow1 + pow2);
+                Log.i("Distance", "Distance " + i + ": " + dist);
+            }
+        } else {
+            Log.i("inMethod", "distBetweenPoints - chessboard not found");
+        }
     }
 
     @Override
@@ -220,11 +284,29 @@ public class Verify extends Fragment implements View.OnClickListener, CameraBrid
 
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
+
         // Grab the frame shown in the camera and assign it to the mRGBA variable
         mRGBA = inputFrame.rgba();
+        Mat grayImage = new Mat();
 
-        Mat undistorted = new Mat();
         Calib3d.undistort(mRGBA, undistorted, intrinsic, distCoeffs);
+
+        Imgproc.cvtColor(undistorted, grayImage, Imgproc.COLOR_BGR2GRAY);
+
+        if(debug) {
+            Log.i("intrinsic", intrinsic.toString());
+            Log.i("intrinsic", intrinsic.dump());
+            debug = false;
+        }
+
+        found = chessboardDetection(grayImage);
+
+        if (found) {
+            Log.d("Chessboard", "Chessboard true");
+            Calib3d.drawChessboardCorners(undistorted, boardSize, imageCornerCopy, found);
+        } else {
+            Log.d("Chessboard", "Chessboard false");
+        }
 
         return undistorted;
     }
