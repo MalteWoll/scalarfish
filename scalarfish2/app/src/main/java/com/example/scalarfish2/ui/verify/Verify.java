@@ -221,10 +221,11 @@ public class Verify extends Fragment implements View.OnClickListener, CameraBrid
         Log.i("inMethod", "distBetweenPoints");
         if(chessboardFound) {
             Log.i("inMethod", "distBetweenPoints - chessboard found");
-            //Log.i("imageCorners", imageCornerCopy.dump());
+
+            // Calculate the distance between points of the chessboard. If the distance is roughly equal, the camera should be calculated correctly.
             for(int i = 0; i < (boardSize.width * boardSize.height - 1); i++) {
-                double pow1 = Math.pow((imageCornerCopy.get(i,0)[1] - imageCornerCopy.get(i,0)[0]), 2);
-                double pow2 = Math.pow((imageCornerCopy.get(i+1,0)[0] - imageCornerCopy.get(i+1,0)[1]), 2);
+                double pow1 = Math.pow((imageCornerCopy.get(i+1,0)[0] - imageCornerCopy.get(i,0)[0]), 2);
+                double pow2 = Math.pow((imageCornerCopy.get(i+1,0)[1] - imageCornerCopy.get(i,0)[1]), 2);
                 double dist = Math.sqrt(pow1 + pow2);
                 Log.i("Distance", "Distance " + i + ": " + dist);
             }
