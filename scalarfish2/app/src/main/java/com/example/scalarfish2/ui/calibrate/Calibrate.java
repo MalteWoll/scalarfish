@@ -28,8 +28,10 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import com.example.scalarfish2.R;
 import com.example.scalarfish2.databinding.FragmentHomeBinding;
@@ -68,6 +70,8 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
     Button btnCaptureImg; /* button to start the image capture process with */
     Button btnCalibrate; /* button to start the calibration process with */
     Button btnVerify; /* button that takes the user to the verification fragment */
+    ImageButton btnCaptureCalibImg; /* button for taking single pictures */
+    TextView txtImgCounter; /* text counter for valid images taken */
     ProgressBar loadingSpinner; /* circular spinner, displaying calculation */
 
     // For creating a path to save the image to, not needed for now
@@ -97,6 +101,8 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
     boolean calibrated;
     boolean calibInProgress = false;
     boolean debug = true;
+
+    int imgCounter = 0; /* Counts how many valid calibration images have been taken already */
 
     private FragmentHomeBinding binding;
 
@@ -165,13 +171,21 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
         btnCalibrate = (Button) view.findViewById(R.id.btnCalibrate);
         btnCalibrate.setOnClickListener(this);
 
+        // Button for going to the calibration verification fragment
         btnVerify = (Button) view.findViewById(R.id.btnVerify);
         btnVerify.setOnClickListener(this);
         btnVerify.setVisibility(View.INVISIBLE);
 
+        // Button for taking single pictures for calibration
+        btnCaptureCalibImg = (ImageButton) view.findViewById(R.id.btnCaptureCalibImg);
+        btnCaptureCalibImg.setOnClickListener(this);
+        btnCaptureCalibImg.setVisibility(View.INVISIBLE);
+
         // Get the progress bar
         loadingSpinner = (ProgressBar) view.findViewById(R.id.progressBar);
         loadingSpinner.setVisibility(View.INVISIBLE);
+
+        txtImgCounter = (TextView) view.findViewById(R.id.txtCalibCounter);
 
         // Get the OpenCV camera view in the fragment's layout
         javaCameraView = (JavaCameraView) view.findViewById(R.id.openCvCameraView);
@@ -222,6 +236,8 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
                 javaCameraView.setVisibility(SurfaceView.VISIBLE);
                 // Disable the button
                 btnCaptureImg.setVisibility(SurfaceView.INVISIBLE);
+                // Enable the button to take images
+                btnCaptureCalibImg.setVisibility(View.VISIBLE);
                 break;
             case R.id.btnCalibrate:
                 // Make the loading spinner visible
@@ -236,6 +252,9 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
                 transaction.replace(R.id.nav_host_fragment_content_main, fragment);
                 transaction.addToBackStack(null);
                 transaction.commit();
+                break;
+            case R.id.btnCaptureCalibImg:
+                checkImageForChessboard();
                 break;
         }
     }
@@ -325,6 +344,25 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
         return img_bitmap;
     }
 
+    public void checkImageForChessboard() {
+        boolean found = Calib3d.findChessboardCorners(mRGBA, boardSize, imageCorners, Calib3d.CALIB_CB_ADAPTIVE_THRESH + Calib3d.CALIB_CB_NORMALIZE_IMAGE + Calib3d.CALIB_CB_FAST_CHECK);
+        if(found) {
+            Log.i("Chessboard", "Chessboard found");
+
+            imagePoints.add(imageCorners);
+            imageCornerCopy = imageCorners;
+
+            imageCorners = new MatOfPoint2f();
+            objectPoints.add(obj);
+            mRGBA.copyTo(savedImage);
+
+            imgCounter++;
+            txtImgCounter.setText(imgCounter + " / 30");
+        } else {
+            Log.i("Chessboard", "Chessboard not found");
+        }
+    }
+
     // Detecting the chessboard pattern in a Mat variable, corners are saved to the imageCorners variable, returns true if chessboard is detected
     public boolean chessboardDetection(Mat img_result) {
         // TODO: Everything in this method on another thread
@@ -332,18 +370,13 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
 
         if(found) {
             // When a chessboard has been detected, save the imageCorners by adding it to the list of corners
-
-            // TODO: Apply functions from https://opencv-java-tutorials.readthedocs.io/en/latest/09-camera-calibration.html for better calibration result (cornerSubPix)
+            // TODO: (Maybe) Apply functions from https://opencv-java-tutorials.readthedocs.io/en/latest/09-camera-calibration.html for better calibration result (cornerSubPix)
 
             imagePoints.add(imageCorners);
             imageCornerCopy = imageCorners;
 
-            //Log.i("ImageCorners", String.valueOf(imageCorners.get(36,0)[0]) + ", " + String.valueOf(imageCorners.get(36,0)[1]));
-
             imageCorners = new MatOfPoint2f(); /* WHYYY???? */
-
             objectPoints.add(obj);
-
             img_result.copyTo(savedImage); /* This is for saving the size? There should be an easier way than saving every time */
         }
         img_result.release(); /* Release the matrix manually, since Java doesn't detect the size behind it */
@@ -383,8 +416,9 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
         } else {
             if(!calibrated) {
                 // Convert to gray image for faster processing
-                Imgproc.cvtColor(mRGBA, grayImage, Imgproc.COLOR_BGR2GRAY);
+                //Imgproc.cvtColor(mRGBA, grayImage, Imgproc.COLOR_BGR2GRAY);
 
+                /*
                 // Find the chessboard in the live view
                 found = chessboardDetection(grayImage);
                 if (found) {
@@ -392,7 +426,7 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
                     Calib3d.drawChessboardCorners(mRGBA, boardSize, imageCornerCopy, found);
                 } else {
                     Log.d("Chessboard", "Chessboard false");
-                }
+                }*/
                 return mRGBA;
             } else {
                 Mat undistorted = new Mat();
