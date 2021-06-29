@@ -13,6 +13,17 @@
         android:layout_height="match_parent">
 
 
+        <ImageView
+            android:id="@+id/imageViewCamera"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:rotation="0"
+            android:src="@drawable/ic_menu_camera"
+            app:layout_constraintBottom_toBottomOf="@+id/openCvCameraView3"
+            app:layout_constraintEnd_toEndOf="@+id/openCvCameraView3"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/openCvCameraView3" />
+
         <org.opencv.android.JavaCameraView
             android:id="@+id/openCvCameraView3"
             android:layout_width="fill_parent"
@@ -47,6 +58,29 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="@+id/openCvCameraView3"
             app:layout_constraintVertical_bias="0.959" />
+
+        <ImageButton
+            android:id="@+id/btnCancelImg"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="108dp"
+            android:src="@android:drawable/btn_dialog"
+            app:layout_constraintBottom_toTopOf="@+id/btnCaptureImgCamera"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.957" />
+
+        <ImageButton
+            android:id="@+id/btnConfirmImg"
+            android:layout_width="60dp"
+            android:layout_height="51dp"
+            android:src="@android:drawable/checkbox_on_background"
+            app:layout_constraintBottom_toTopOf="@+id/btnCaptureImgCamera"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.675"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.957" />
 
 
     </androidx.constraintlayout.widget.ConstraintLayout>
