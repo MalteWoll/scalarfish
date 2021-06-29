@@ -4,6 +4,8 @@ import android.Manifest;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.media.Image;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -11,12 +13,14 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
+import android.os.Environment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CompoundButton;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.Switch;
 
 import com.example.scalarfish2.R;
@@ -25,9 +29,17 @@ import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.JavaCameraView;
 import org.opencv.android.OpenCVLoader;
+import org.opencv.android.Utils;
 import org.opencv.calib3d.Calib3d;
+import org.opencv.core.CvException;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.imgproc.Imgproc;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class Camera extends Fragment implements View.OnClickListener, CameraBridgeViewBase.CvCameraViewListener2 {
 
@@ -37,20 +49,25 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
     JavaCameraView javaCameraView;
     private final int PERMISSIONS_READ_CAMERA=1;
     private Mat mRGBA; /* a matrix for copying the values of the current frame of the camera to */
+    private Mat mRGBAcopy;
     int cameraCounter = 0; /* for counting and reducing fps */
 
     Mat distCoeffs = new Mat(1, 5, CvType.CV_64FC1);
     Mat intrinsic = new Mat(3, 3, CvType.CV_64FC1); /* Intrinsic camera values */
 
     Mat undistorted = new Mat();
-
     Mat currentImg = new Mat();
 
     // UI elements
     ImageButton btnCaptureImg;
+    ImageButton btnConfirmImg;
+    ImageButton btnCancelImg;
     Switch switchUseCalibrated;
+    ImageView imagePreview;
 
     boolean useCalibration = false; /* Value of the switch on top to decide if the calibrated image should be used */
+
+    String lastSavedImgPath;
 
     public Camera() {
         // Required empty public constructor
@@ -111,6 +128,17 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
         // Get the buttons and switch
         btnCaptureImg = (ImageButton) view.findViewById(R.id.btnCaptureImgCamera);
         btnCaptureImg.setOnClickListener(this);
+
+        btnConfirmImg = (ImageButton) view.findViewById(R.id.btnConfirmImg);
+        btnConfirmImg.setOnClickListener(this);
+        btnConfirmImg.setVisibility(View.INVISIBLE);
+
+        btnCancelImg = (ImageButton) view.findViewById(R.id.btnCancelImg);
+        btnCancelImg.setOnClickListener(this);
+        btnCancelImg.setVisibility(View.INVISIBLE);
+
+        imagePreview = (ImageView) view.findViewById(R.id.imageViewCamera);
+
         switchUseCalibrated = (Switch) view.findViewById(R.id.switchCalibration);
         // Set the listener for the switch, since it needs its own
         switchUseCalibrated.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -175,9 +203,66 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
     public void onClick(View v) {
         switch(v.getId()) {
             case R.id.btnCaptureImgCamera:
+                currentImg = mRGBAcopy;
 
+                //javaCameraView.disableView(); /* Disabling the camera view deletes the values of the Mat objects. Why? How to circumvent and keep values? */
+
+                imagePreview.setImageBitmap(createBitmap(currentImg));
+
+                // Hide the camera view to display the taken image
+                javaCameraView.setVisibility(View.INVISIBLE);
+
+                btnConfirmImg.setVisibility(View.VISIBLE);
+                btnCancelImg.setVisibility(View.VISIBLE);
+                btnCaptureImg.setVisibility(View.INVISIBLE);
+                break;
+            case R.id.btnConfirmImg:
+                //createAndSaveBitmap(currentImg);
+                break;
+            case R.id.btnCancelImg:
+                currentImg = new Mat();
+                btnCancelImg.setVisibility(View.INVISIBLE);
+                btnConfirmImg.setVisibility(View.INVISIBLE);
+                btnCaptureImg.setVisibility(View.VISIBLE);
+                javaCameraView.setVisibility(View.VISIBLE);
                 break;
         }
+    }
+
+    // TODO: Maybe move this to another thread
+    private Bitmap createBitmap(Mat source) {
+        Log.i("Source", source.toString());
+        Bitmap bmp = null;
+        Mat rgb = new Mat();
+        Imgproc.cvtColor(source, rgb, Imgproc.COLOR_BGR2RGB);
+
+        try {
+            bmp = Bitmap.createBitmap(rgb.cols(), rgb.rows(), Bitmap.Config.ARGB_8888);
+            Utils.matToBitmap(rgb, bmp);
+        }
+        catch(CvException e) {
+            Log.d("Exception", e.getMessage());
+        }
+        return bmp;
+    }
+
+    private void saveBitmap(Bitmap bmp) {
+        // Create a file name for the image
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String imageFileName = timeStamp + ".jpg";
+
+        try {
+            FileOutputStream fileOutputStream = getContext().openFileOutput(imageFileName, Context.MODE_PRIVATE);
+            bmp.compress(Bitmap.CompressFormat.PNG, 100, fileOutputStream);
+            fileOutputStream.close();
+            Log.i("ImgSaved", "Image file saved");
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
+
+        // Get the path to the image file last saved. There might be an easier way, but this works for now
+        lastSavedImgPath = getContext().getFilesDir().listFiles()[getContext().getFilesDir().listFiles().length-1].toString();
+        Log.i("LastSavedImgPath", lastSavedImgPath);
     }
 
     @Override
@@ -236,9 +321,12 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
         // Check if we want to return the undistorted image or the raw camera output
         if(useCalibration) {
             Calib3d.undistort(mRGBA, undistorted, intrinsic, distCoeffs);
-            return undistorted;
+            // To save the current frame in one object, no matter if distorted or not, we copy the value to that matrix
+            mRGBAcopy = undistorted;
+            return mRGBAcopy;
         } else {
-            return mRGBA;
+            mRGBAcopy = mRGBA;
+            return mRGBAcopy;
         }
     }
 }
