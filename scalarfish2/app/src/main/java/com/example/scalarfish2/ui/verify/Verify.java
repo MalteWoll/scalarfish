@@ -19,7 +19,6 @@ import android.view.ViewGroup;
 import android.widget.Button;
 
 import com.example.scalarfish2.R;
-import com.example.scalarfish2.databinding.FragmentHomeBinding;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
@@ -29,8 +28,6 @@ import org.opencv.calib3d.Calib3d;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint2f;
-import org.opencv.core.MatOfPoint3f;
-import org.opencv.core.Point3;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
@@ -113,7 +110,7 @@ public class Verify extends Fragment implements View.OnClickListener, CameraBrid
         ((AppCompatActivity)getActivity()).getSupportActionBar().setTitle("Verify Calibration");
 
         // Get the OpenCV camera view in the fragment's layout
-        javaCameraView = (JavaCameraView) view.findViewById(R.id.openCvCameraView2);
+        javaCameraView = (JavaCameraView) view.findViewById(R.id.openCvCameraView3);
         javaCameraView.setCvCameraViewListener(this);
         // Set the front camera to the one that will be used
         javaCameraView.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_BACK);

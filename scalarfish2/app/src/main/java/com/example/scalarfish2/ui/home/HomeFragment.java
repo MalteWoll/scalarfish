@@ -20,6 +20,7 @@ import androidx.lifecycle.ViewModelProvider;
 import com.example.scalarfish2.R;
 import com.example.scalarfish2.databinding.FragmentHomeBinding;
 import com.example.scalarfish2.ui.calibrate.Calibrate;
+import com.example.scalarfish2.ui.camera.Camera;
 
 public class HomeFragment extends Fragment implements View.OnClickListener {
 
@@ -58,15 +59,19 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
         switch (v.getId()) {
             case R.id.btnCalibrate:
                 Log.i("Button", "Calibrate button pressed.");
-                Fragment fragment = new Calibrate();
-                FragmentTransaction transaction = getFragmentManager().beginTransaction();
-                transaction.replace(R.id.nav_host_fragment_content_main, fragment);
-                transaction.addToBackStack(null);
-                transaction.commit();
+                Fragment fragmentCalib = new Calibrate();
+                FragmentTransaction transactionCalib = getFragmentManager().beginTransaction();
+                transactionCalib.replace(R.id.nav_host_fragment_content_main, fragmentCalib);
+                transactionCalib.addToBackStack(null);
+                transactionCalib.commit();
                 break;
             case R.id.btnCamera:
                 Log.i("Button", "Camera button pressed.");
-                getActivity().getActionBar().setTitle("Calibration");
+                Fragment fragmentCamera = new Camera();
+                FragmentTransaction transactionCamera = getFragmentManager().beginTransaction();
+                transactionCamera.replace(R.id.nav_host_fragment_content_main, fragmentCamera);
+                transactionCamera.addToBackStack(null);
+                transactionCamera.commit();
                 break;
         }
     }
