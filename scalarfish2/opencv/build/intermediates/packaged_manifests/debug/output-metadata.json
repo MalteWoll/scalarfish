@@ -10,7 +10,9 @@
     {
       "type": "SINGLE",
       "filters": [],
-      "outputFile": "../../merged_manifest/debug/AndroidManifest.xml"
+      "versionCode": 405010,
+      "versionName": "4.5.1",
+      "outputFile": "AndroidManifest.xml"
     }
   ]
 }
