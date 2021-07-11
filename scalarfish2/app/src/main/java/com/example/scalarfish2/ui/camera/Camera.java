@@ -2,6 +2,7 @@ package com.example.scalarfish2.ui.camera;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -24,6 +25,7 @@ import android.widget.ImageView;
 import android.widget.Switch;
 
 import com.example.scalarfish2.R;
+import com.example.scalarfish2.ui.setPoints.SetPointsActivity;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
@@ -31,11 +33,13 @@ import org.opencv.android.JavaCameraView;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.calib3d.Calib3d;
+import org.opencv.core.Core;
 import org.opencv.core.CvException;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
@@ -68,6 +72,8 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
     boolean useCalibration = false; /* Value of the switch on top to decide if the calibrated image should be used */
 
     String lastSavedImgPath;
+
+    Bitmap imgBitmap;
 
     public Camera() {
         // Required empty public constructor
@@ -206,8 +212,8 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
                 currentImg = mRGBAcopy;
 
                 //javaCameraView.disableView(); /* Disabling the camera view deletes the values of the Mat objects. Why? How to circumvent and keep values? */
-
-                imagePreview.setImageBitmap(createBitmap(currentImg));
+                imgBitmap = createBitmap(currentImg);
+                imagePreview.setImageBitmap(imgBitmap);
 
                 // Hide the camera view to display the taken image
                 javaCameraView.setVisibility(View.INVISIBLE);
@@ -218,6 +224,12 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
                 break;
             case R.id.btnConfirmImg:
                 //createAndSaveBitmap(currentImg);
+                ByteArrayOutputStream bStream = new ByteArrayOutputStream();
+                imgBitmap.compress(Bitmap.CompressFormat.PNG, 100, bStream);
+                byte[] byteArray = bStream.toByteArray();
+                Intent i = new Intent(getActivity(), SetPointsActivity.class);
+                i.putExtra("currentImg", byteArray);
+                startActivity(i);
                 break;
             case R.id.btnCancelImg:
                 currentImg = new Mat();

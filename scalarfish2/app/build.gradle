@@ -41,6 +41,7 @@ dependencies {
     implementation 'androidx.navigation:navigation-ui:2.3.5'
     implementation project(path: ':opencv')
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
+    implementation 'com.github.MikeOrtiz:TouchImageView:1.4.1' // last SupportLib version
     testImplementation 'junit:junit:4.+'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
