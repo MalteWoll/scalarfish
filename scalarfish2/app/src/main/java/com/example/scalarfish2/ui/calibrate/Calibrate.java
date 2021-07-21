@@ -46,6 +46,7 @@ import java.util.List;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
+import org.opencv.android.JavaCamera2View;
 import org.opencv.android.JavaCameraView;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
@@ -80,13 +81,13 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
     File photoFile;
 
     // OpenCV camera
-    private JavaCameraView javaCameraView; /* the camera we are going to use instead of the android camera */
+    private JavaCamera2View javaCameraView; /* the camera we are going to use instead of the android camera */
     private Mat mRGBA; /* a matrix for copying the values of the current frame of the camera to */
     private final int PERMISSIONS_READ_CAMERA=1;
     int cameraCounter = 0; /* for counting and reducing fps */
 
     // Calibration values
-    Size boardSize = new Size(8,6); /* The size of the chessboard */
+    Size boardSize = new Size(9,6); /* The size of the chessboard */
     MatOfPoint2f imageCorners = new MatOfPoint2f(); /* A matrix for detecting the corners */
     MatOfPoint2f imageCornerCopy = new MatOfPoint2f();
     MatOfPoint3f obj = new MatOfPoint3f(); /* 3d matrix */
@@ -188,7 +189,7 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
         txtImgCounter = (TextView) view.findViewById(R.id.txtCalibCounter);
 
         // Get the OpenCV camera view in the fragment's layout
-        javaCameraView = (JavaCameraView) view.findViewById(R.id.openCvCameraView);
+        javaCameraView = (JavaCamera2View) view.findViewById(R.id.openCvCameraView);
         javaCameraView.setCvCameraViewListener(this);
         // Set the front camera to the one that will be used
         javaCameraView.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_BACK);
@@ -254,7 +255,8 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
                 transaction.commit();
                 break;
             case R.id.btnCaptureCalibImg:
-                checkImageForChessboard();
+                Log.i("mRGBA", mRGBA.toString());
+                checkImageForChessboard(mRGBA);
                 break;
         }
     }
@@ -344,8 +346,11 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
         return img_bitmap;
     }
 
-    public void checkImageForChessboard() {
-        boolean found = Calib3d.findChessboardCorners(mRGBA, boardSize, imageCorners, Calib3d.CALIB_CB_ADAPTIVE_THRESH + Calib3d.CALIB_CB_NORMALIZE_IMAGE + Calib3d.CALIB_CB_FAST_CHECK);
+    public void checkImageForChessboard(Mat mat) {
+        boolean found = false;
+        if(mat.size().height != 0) {
+            found = Calib3d.findChessboardCorners(mat, boardSize, imageCorners, Calib3d.CALIB_CB_ADAPTIVE_THRESH + Calib3d.CALIB_CB_NORMALIZE_IMAGE + Calib3d.CALIB_CB_FAST_CHECK);
+        }
         if(found) {
             Log.i("Chessboard", "Chessboard found");
 
@@ -354,7 +359,7 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
 
             imageCorners = new MatOfPoint2f();
             objectPoints.add(obj);
-            mRGBA.copyTo(savedImage);
+            mat.copyTo(savedImage);
 
             imgCounter++;
             txtImgCounter.setText(imgCounter + " / 30");
@@ -366,6 +371,7 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
     // Detecting the chessboard pattern in a Mat variable, corners are saved to the imageCorners variable, returns true if chessboard is detected
     public boolean chessboardDetection(Mat img_result) {
         // TODO: Everything in this method on another thread
+
         boolean found = Calib3d.findChessboardCorners(img_result, boardSize, imageCorners, Calib3d.CALIB_CB_ADAPTIVE_THRESH + Calib3d.CALIB_CB_NORMALIZE_IMAGE + Calib3d.CALIB_CB_FAST_CHECK);
 
         if(found) {
