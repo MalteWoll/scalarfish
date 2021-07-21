@@ -58,7 +58,7 @@ import org.opencv.calib3d.*;
 import org.opencv.core.MatOfPoint3f;
 import org.opencv.core.Point3;
 
-public class Calibrate extends Fragment implements View.OnClickListener, CameraBridgeViewBase.CvCameraViewListener2 {
+public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnClickListener, CameraBridgeViewBase.CvCameraViewListener2 {
     private static final int MY_CAMERA_REQUEST_CODE = 100;
 
     // For image capturing
@@ -86,7 +86,7 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
     int cameraCounter = 0; /* for counting and reducing fps */
 
     // Calibration values
-    Size boardSize = new Size(9,6); /* The size of the chessboard */
+    Size boardSize = new Size(8,6); /* The size of the chessboard */
     MatOfPoint2f imageCorners = new MatOfPoint2f(); /* A matrix for detecting the corners */
     MatOfPoint2f imageCornerCopy = new MatOfPoint2f();
     MatOfPoint3f obj = new MatOfPoint3f(); /* 3d matrix */
