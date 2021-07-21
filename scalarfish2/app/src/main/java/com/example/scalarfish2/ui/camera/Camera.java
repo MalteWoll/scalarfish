@@ -13,6 +13,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
 
 import android.os.Environment;
 import android.util.Log;
@@ -26,6 +27,7 @@ import android.widget.Switch;
 
 import com.example.scalarfish2.R;
 import com.example.scalarfish2.ui.setPoints.SetPointsActivity;
+import com.example.scalarfish2.ui.verify.Verify;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
@@ -224,12 +226,15 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
                 break;
             case R.id.btnConfirmImg:
                 //createAndSaveBitmap(currentImg);
-                ByteArrayOutputStream bStream = new ByteArrayOutputStream();
+                /*ByteArrayOutputStream bStream = new ByteArrayOutputStream();
                 imgBitmap.compress(Bitmap.CompressFormat.PNG, 100, bStream);
                 byte[] byteArray = bStream.toByteArray();
                 Intent i = new Intent(getActivity(), SetPointsActivity.class);
                 i.putExtra("currentImg", byteArray);
-                startActivity(i);
+                startActivity(i);*/
+                saveBitmap(imgBitmap);
+                Intent intent = new Intent(getActivity(), SetPointsActivity.class);
+                startActivity(intent);
                 break;
             case R.id.btnCancelImg:
                 currentImg = new Mat();
@@ -275,6 +280,11 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
         // Get the path to the image file last saved. There might be an easier way, but this works for now
         lastSavedImgPath = getContext().getFilesDir().listFiles()[getContext().getFilesDir().listFiles().length-1].toString();
         Log.i("LastSavedImgPath", lastSavedImgPath);
+
+        SharedPreferences prefs = getContext().getSharedPreferences("lastImage",Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putString("lastFilePath", lastSavedImgPath);
+        editor.commit();
     }
 
     @Override

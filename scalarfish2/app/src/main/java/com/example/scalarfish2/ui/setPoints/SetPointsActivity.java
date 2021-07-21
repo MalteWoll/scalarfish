@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -14,6 +15,7 @@ import android.graphics.Paint;
 import android.graphics.PointF;
 import android.graphics.drawable.BitmapDrawable;
 import android.media.Image;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -56,13 +58,19 @@ public class SetPointsActivity extends AppCompatActivity implements View.OnClick
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_set_points);
 
+        /*
         Intent intent = getIntent();
         byte[] tmp = intent.getByteArrayExtra("currentImg");
         Log.i("Img:", tmp.toString());
         currentImg = BitmapFactory.decodeByteArray(tmp, 0, tmp.length);
-
+        */
         imageView = findViewById(R.id.setPointsImage);
         //imageView.setImageBitmap(currentImg);
+
+        SharedPreferences prefs = getSharedPreferences("lastImage", Context.MODE_PRIVATE);
+        String lastImagePath = prefs.getString("lastFilePath", "");
+        Log.i("lastImage", "Last image path: " + lastImagePath);
+        imageView.setImageURI(Uri.parse(lastImagePath));
         maxPoints = 0;
 
         //drawable = (BitmapDrawable) imageView.getDrawable();
@@ -179,6 +187,7 @@ public class SetPointsActivity extends AppCompatActivity implements View.OnClick
             }
             if (point2 != null) {
                 canvas.drawCircle(point2.x, point2.y, 20, paint);
+                canvas.drawCircle(imageView.getWidth()/2, imageView.getHeight(), 20, paint);
             }
         }
 
@@ -189,7 +198,7 @@ public class SetPointsActivity extends AppCompatActivity implements View.OnClick
             PointF b = new PointF(point2.x - eyePoint.x, point2.y - eyePoint.y);
             Log.i("a:", String.valueOf(a));
             Log.i("b:", String.valueOf(b));
-            float angle = (float) Math.acos(((a.x* b.x) + (a.y * b.y))/ (a.length() * b.length()));
+            float angle = (float) Math.toDegrees(Math.acos(((a.x* b.x) + (a.y * b.y))/ (a.length() * b.length())));
             Log.i("Angle:", String.valueOf(angle));
             txtCalculatedAngle.setText(String.valueOf(angle));
 
