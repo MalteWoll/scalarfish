@@ -28,6 +28,7 @@ import android.view.LayoutInflater;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -194,8 +195,6 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
         javaCameraView.setCvCameraViewListener(this);
         // Set the front camera to the one that will be used
         javaCameraView.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_BACK);
-
-
 
 
         //javaCameraView.enableFpsMeter();
@@ -484,6 +483,7 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
     public void onResume() {
         super.onResume();
         Log.d("onResume", "onResume");
+        ((AppCompatActivity)getActivity()).getSupportActionBar().hide();
         if (OpenCVLoader.initDebug())
         {
             Log.d("OpenCV", "OpenCV is initialised again");
@@ -496,6 +496,12 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
         }
     }
 
+    @Override
+    public void onStop() {
+        super.onStop();
+        ((AppCompatActivity)getActivity()).getSupportActionBar().show();
+    }
+
     public void calibrateCamera() {
         // Not disabling the camera froze the app previously, now it works. Disabling might still be advisable, because the calibration takes a moment.
         //javaCameraView.disableView();
@@ -503,7 +509,7 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
         // Create a new thread to calculate the result in that is no the main UI thread. This makes the calculation faster and stops the app from freezing.
         Thread calibrateThread = new Thread() {
             public void run() {
-                Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_DISPLAY);
+                Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_DISPLAY); /* Hopefully, this speeds up calculations */
                 List<Mat> rvecs = new ArrayList<>();
                 List<Mat> tvecs = new ArrayList<>();
                 // TODO: Focal length = fx, fy

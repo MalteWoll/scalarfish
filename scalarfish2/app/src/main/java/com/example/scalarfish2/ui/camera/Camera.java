@@ -48,6 +48,8 @@ import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+// https://stackoverflow.com/questions/26187378/android-opencv-camerabridgeviewbase-take-picture
+
 public class Camera extends Fragment implements View.OnClickListener, CameraBridgeViewBase.CvCameraViewListener2 {
 
     // Interface
@@ -252,11 +254,17 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
         Log.i("Source", source.toString());
         Bitmap bmp = null;
         Mat rgb = new Mat();
+
+        // TODO: Fix colors
         Imgproc.cvtColor(source, rgb, Imgproc.COLOR_BGR2RGB);
 
+        // Rotate the image by 90 degrees
+        Mat rotated = new Mat();
+        Core.rotate(rgb, rotated, Core.ROTATE_90_CLOCKWISE);
+
         try {
-            bmp = Bitmap.createBitmap(rgb.cols(), rgb.rows(), Bitmap.Config.ARGB_8888);
-            Utils.matToBitmap(rgb, bmp);
+            bmp = Bitmap.createBitmap(rotated.cols(), rotated.rows(), Bitmap.Config.ARGB_8888);
+            Utils.matToBitmap(rotated, bmp);
         }
         catch(CvException e) {
             Log.d("Exception", e.getMessage());
@@ -325,6 +333,7 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
     public void onResume() {
         super.onResume();
         Log.d("onResume", "onResume");
+        ((AppCompatActivity)getActivity()).getSupportActionBar().hide();
         if (OpenCVLoader.initDebug())
         {
             Log.d("OpenCV", "OpenCV is initialised again");
@@ -335,6 +344,12 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
             Log.d("OpenCV", "OpenCV is not working");
             OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION, getContext(), baseLoaderCallback);
         }
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        ((AppCompatActivity)getActivity()).getSupportActionBar().show();
     }
 
     @Override
