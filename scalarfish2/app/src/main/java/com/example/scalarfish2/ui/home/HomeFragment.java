@@ -30,7 +30,6 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
     View view;
     Button btnCalibrate;
     Button btnStart;
-    Button btnImageTest;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -52,8 +51,6 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
         btnCalibrate.setOnClickListener(this);
         btnStart = (Button) root.findViewById(R.id.btnCamera);
         btnStart.setOnClickListener(this);
-        btnImageTest =(Button) root.findViewById(R.id.btnImageTest);
-        btnImageTest.setOnClickListener(this);
         return root;
     }
 
@@ -76,9 +73,6 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
                 transactionCamera.addToBackStack(null);
                 transactionCamera.commit();
                 break;
-            case R.id.btnImageTest:
-                Log.i("Button", "Set Points in image");
-                openSetPointsActivity();
         }
     }
 
