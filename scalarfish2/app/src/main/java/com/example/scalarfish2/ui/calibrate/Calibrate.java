@@ -9,6 +9,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Process;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -195,6 +196,8 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
         javaCameraView.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_BACK);
 
 
+
+
         //javaCameraView.enableFpsMeter();
 
         // Get the image view to display the captured image on
@@ -255,7 +258,7 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
                 transaction.commit();
                 break;
             case R.id.btnCaptureCalibImg:
-                Log.i("mRGBA", mRGBA.toString());
+                Log.i("mRGBA", mRGBA.size().toString());
                 checkImageForChessboard(mRGBA);
                 break;
         }
@@ -348,27 +351,34 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
 
     public void checkImageForChessboard(Mat mat) {
         boolean found = false;
-        if(mat.size().height != 0) {
+        if(mat.size().height > 0 && mat.size().width > 0) {
             found = Calib3d.findChessboardCorners(mat, boardSize, imageCorners, Calib3d.CALIB_CB_ADAPTIVE_THRESH + Calib3d.CALIB_CB_NORMALIZE_IMAGE + Calib3d.CALIB_CB_FAST_CHECK);
         }
         if(found) {
             Log.i("Chessboard", "Chessboard found");
+            Log.i("ImageCorners", imageCorners.size().toString());
 
-            imagePoints.add(imageCorners);
-            imageCornerCopy = imageCorners;
+            if(imageCorners.size().width > 0 && imageCorners.size().width > 0) {
+                imagePoints.add(imageCorners);
+                imageCornerCopy = imageCorners;
 
-            imageCorners = new MatOfPoint2f();
-            objectPoints.add(obj);
-            mat.copyTo(savedImage);
+                imageCorners = new MatOfPoint2f();
+                objectPoints.add(obj);
 
-            imgCounter++;
-            txtImgCounter.setText(imgCounter + " / 30");
+                Log.i("objPoints", obj.size().toString());
+
+                mat.copyTo(savedImage);
+
+                imgCounter++;
+                txtImgCounter.setText(imgCounter + " / 30");
+            }
         } else {
             Log.i("Chessboard", "Chessboard not found");
         }
     }
 
     // Detecting the chessboard pattern in a Mat variable, corners are saved to the imageCorners variable, returns true if chessboard is detected
+    // This was to heavy on performance, we are not using it anymore
     public boolean chessboardDetection(Mat img_result) {
         // TODO: Everything in this method on another thread
 
@@ -493,13 +503,20 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
         // Create a new thread to calculate the result in that is no the main UI thread. This makes the calculation faster and stops the app from freezing.
         Thread calibrateThread = new Thread() {
             public void run() {
-
+                Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_DISPLAY);
                 List<Mat> rvecs = new ArrayList<>();
                 List<Mat> tvecs = new ArrayList<>();
                 // TODO: Focal length = fx, fy
                 intrinsic.put(0, 0, 1);
                 intrinsic.put(1, 1, 1);
                 // calibrate
+
+                Log.i("savedImageSize", savedImage.size().toString());
+
+                if(savedImage.size().width <= 0 || savedImage.size().height <= 0) {
+                    mRGBA.copyTo(savedImage);
+                }
+
                 Calib3d.calibrateCamera(objectPoints, imagePoints, savedImage.size(), intrinsic, distCoeffs, rvecs, tvecs);
 
                 Message message = new Message();

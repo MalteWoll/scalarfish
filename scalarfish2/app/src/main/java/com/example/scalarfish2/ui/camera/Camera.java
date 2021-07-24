@@ -31,6 +31,7 @@ import com.example.scalarfish2.ui.verify.Verify;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
+import org.opencv.android.JavaCamera2View;
 import org.opencv.android.JavaCameraView;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
@@ -52,7 +53,7 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
     // Interface
     View view; /* The view everything is in */
 
-    JavaCameraView javaCameraView;
+    JavaCamera2View javaCameraView;
     private final int PERMISSIONS_READ_CAMERA=1;
     private Mat mRGBA; /* a matrix for copying the values of the current frame of the camera to */
     private Mat mRGBAcopy;
@@ -128,7 +129,7 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
         ((AppCompatActivity)getActivity()).getSupportActionBar().setTitle("Camera");
 
         // Get the OpenCV camera view in the fragment's layout
-        javaCameraView = (JavaCameraView) view.findViewById(R.id.openCvCameraView3);
+        javaCameraView = (JavaCamera2View) view.findViewById(R.id.openCvCameraView3);
         javaCameraView.setCvCameraViewListener(this);
         // Set the front camera to the one that will be used
         javaCameraView.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_BACK);
