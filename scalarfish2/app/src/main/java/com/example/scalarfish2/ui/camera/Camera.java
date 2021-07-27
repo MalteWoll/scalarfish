@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.media.Image;
 import android.os.Bundle;
 
@@ -48,14 +49,14 @@ import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-// https://stackoverflow.com/questions/26187378/android-opencv-camerabridgeviewbase-take-picture
+// https://github.com/opencv/opencv/tree/master/samples/android
 
 public class Camera extends Fragment implements View.OnClickListener, CameraBridgeViewBase.CvCameraViewListener2 {
 
     // Interface
     View view; /* The view everything is in */
 
-    JavaCamera2View javaCameraView;
+    CameraBridgeViewBase javaCameraView;
     private final int PERMISSIONS_READ_CAMERA=1;
     private Mat mRGBA; /* a matrix for copying the values of the current frame of the camera to */
     private Mat mRGBAcopy;
@@ -131,7 +132,7 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
         ((AppCompatActivity)getActivity()).getSupportActionBar().setTitle("Camera");
 
         // Get the OpenCV camera view in the fragment's layout
-        javaCameraView = (JavaCamera2View) view.findViewById(R.id.openCvCameraView3);
+        javaCameraView = (CameraBridgeViewBase) view.findViewById(R.id.openCvCameraView3);
         javaCameraView.setCvCameraViewListener(this);
         // Set the front camera to the one that will be used
         javaCameraView.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_BACK);
@@ -217,6 +218,7 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
                 currentImg = mRGBAcopy;
 
                 //javaCameraView.disableView(); /* Disabling the camera view deletes the values of the Mat objects. Why? How to circumvent and keep values? */
+
                 imgBitmap = createBitmap(currentImg);
                 imagePreview.setImageBitmap(imgBitmap);
 
@@ -294,6 +296,10 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
         SharedPreferences.Editor editor = prefs.edit();
         editor.putString("lastFilePath", lastSavedImgPath);
         editor.commit();
+    }
+
+    public void onPictureTaken(byte[] data, Camera camera) {
+        imgBitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
     }
 
     @Override
