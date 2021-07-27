@@ -26,7 +26,7 @@
             app:layout_constraintTop_toTopOf="@+id/openCvCameraView3"
             app:layout_constraintVertical_bias="0.0" />
 
-        <org.opencv.android.JavaCamera2View
+        <com.example.scalarfish2.util.CustomCameraView
             android:id="@+id/openCvCameraView3"
             android:layout_width="fill_parent"
             android:layout_height="fill_parent"

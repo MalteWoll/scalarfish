@@ -1,3 +1,5 @@
+// https://github.com/opencv/opencv/tree/master/samples/android/tutorial-3-cameracontrol/src/org/opencv/samples/tutorial3
+
 package com.example.scalarfish2.ui.camera;
 
 import android.Manifest;
@@ -25,10 +27,12 @@ import android.widget.CompoundButton;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Switch;
+import android.widget.Toast;
 
 import com.example.scalarfish2.R;
 import com.example.scalarfish2.ui.setPoints.SetPointsActivity;
 import com.example.scalarfish2.ui.verify.Verify;
+import com.example.scalarfish2.util.CustomCameraView;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
@@ -41,6 +45,7 @@ import org.opencv.core.Core;
 import org.opencv.core.CvException;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
 import java.io.ByteArrayOutputStream;
@@ -48,6 +53,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 // https://github.com/opencv/opencv/tree/master/samples/android
 
@@ -56,7 +62,7 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
     // Interface
     View view; /* The view everything is in */
 
-    CameraBridgeViewBase javaCameraView;
+    CustomCameraView javaCameraView;
     private final int PERMISSIONS_READ_CAMERA=1;
     private Mat mRGBA; /* a matrix for copying the values of the current frame of the camera to */
     private Mat mRGBAcopy;
@@ -132,7 +138,7 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
         ((AppCompatActivity)getActivity()).getSupportActionBar().setTitle("Camera");
 
         // Get the OpenCV camera view in the fragment's layout
-        javaCameraView = (CameraBridgeViewBase) view.findViewById(R.id.openCvCameraView3);
+        javaCameraView = (CustomCameraView) view.findViewById(R.id.openCvCameraView3);
         javaCameraView.setCvCameraViewListener(this);
         // Set the front camera to the one that will be used
         javaCameraView.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_BACK);
@@ -208,6 +214,7 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
             }
         }
 
+
         return view;
     }
 
@@ -219,7 +226,9 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
 
                 //javaCameraView.disableView(); /* Disabling the camera view deletes the values of the Mat objects. Why? How to circumvent and keep values? */
 
-                imgBitmap = createBitmap(currentImg);
+                //imgBitmap = createBitmap(currentImg);
+
+                imgBitmap = createBitmapByTakingImage();
                 imagePreview.setImageBitmap(imgBitmap);
 
                 // Hide the camera view to display the taken image
@@ -249,6 +258,18 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
                 javaCameraView.setVisibility(View.VISIBLE);
                 break;
         }
+    }
+
+    private Bitmap createBitmapByTakingImage() {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
+        String currentDateandTime = sdf.format(new Date());
+        String fileName = Environment.getStorageDirectory().getPath() + "/img_" + currentDateandTime + ".jpg";
+
+        javaCameraView.takePicture(fileName);
+        Log.i("ImageSaved", fileName + " saved");
+        BitmapFactory.Options bmOptions = new BitmapFactory.Options();
+        Bitmap bmp = BitmapFactory.decodeFile(fileName, bmOptions);
+        return bmp;
     }
 
     // TODO: Maybe move this to another thread
