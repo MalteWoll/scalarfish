@@ -1,6 +1,8 @@
 package com.example.scalarfish2.util;
 
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.security.Policy;
 import java.util.List;
 
 import org.opencv.android.JavaCameraView;
@@ -17,10 +19,13 @@ import android.util.Log;
 public class CustomCameraView extends JavaCameraView implements PictureCallback {
     private static final String TAG = "Util::CustomCameraView";
     private String mPictureFileName;
-    private Bitmap bmp;
+    private Camera mCamera;
 
     public CustomCameraView(Context context, AttributeSet attrs) {
         super(context, attrs);
+        try {
+            mCamera = android.hardware.Camera.open();
+        } catch (RuntimeException ex){}
     }
 
     public List<String> getEffectList() {
@@ -64,8 +69,14 @@ public class CustomCameraView extends JavaCameraView implements PictureCallback 
         mCamera.setPreviewCallback(null);
 
         // PictureCallback is implemented by the current class
-        mCamera.takePicture(null, null, this);
+        try {
+            mCamera.startPreview();
+            mCamera.takePicture(null, null, this);
+        } catch(Exception e) {
+            Log.i("Error", e.toString());
+        }
     }
+
 
     @Override
     public void onPictureTaken(byte[] data, Camera camera) {

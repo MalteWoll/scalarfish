@@ -1,4 +1,5 @@
 // https://github.com/opencv/opencv/tree/master/samples/android/tutorial-3-cameracontrol/src/org/opencv/samples/tutorial3
+// https://github.com/opencv/opencv/tree/master/samples/android
 
 package com.example.scalarfish2.ui.camera;
 
@@ -21,6 +22,7 @@ import androidx.fragment.app.FragmentTransaction;
 import android.os.Environment;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CompoundButton;
@@ -54,8 +56,6 @@ import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
-
-// https://github.com/opencv/opencv/tree/master/samples/android
 
 public class Camera extends Fragment implements View.OnClickListener, CameraBridgeViewBase.CvCameraViewListener2 {
 
@@ -226,9 +226,9 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
 
                 //javaCameraView.disableView(); /* Disabling the camera view deletes the values of the Mat objects. Why? How to circumvent and keep values? */
 
-                //imgBitmap = createBitmap(currentImg);
+                imgBitmap = createBitmap(currentImg);
 
-                imgBitmap = createBitmapByTakingImage();
+                //imgBitmap = createBitmapByTakingImage();
                 imagePreview.setImageBitmap(imgBitmap);
 
                 // Hide the camera view to display the taken image
