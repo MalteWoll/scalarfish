@@ -222,7 +222,7 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
     public void onClick(View v) {
         switch(v.getId()) {
             case R.id.btnCaptureImgCamera:
-                currentImg = mRGBAcopy;
+                mRGBAcopy.copyTo(currentImg);
 
                 //javaCameraView.disableView(); /* Disabling the camera view deletes the values of the Mat objects. Why? How to circumvent and keep values? */
 
@@ -278,8 +278,8 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
         Bitmap bmp = null;
         Mat rgb = new Mat();
 
-        // TODO: Fix colors
-        Imgproc.cvtColor(source, rgb, Imgproc.COLOR_BGR2RGB);
+        //Imgproc.cvtColor(source, rgb, Imgproc.COLOR_BGR2RGB);
+        rgb = source;
 
         // Rotate the image by 90 degrees
         Mat rotated = new Mat();
@@ -383,6 +383,8 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         mRGBA = inputFrame.rgba();
 
+        mRGBAcopy = new Mat();
+
         // Check if we want to return the undistorted image or the raw camera output
         if(useCalibration) {
             Calib3d.undistort(mRGBA, undistorted, intrinsic, distCoeffs);
@@ -390,7 +392,7 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
             mRGBAcopy = undistorted;
             return mRGBAcopy;
         } else {
-            mRGBAcopy = mRGBA;
+            mRGBA.copyTo(mRGBAcopy);
             return mRGBAcopy;
         }
     }
