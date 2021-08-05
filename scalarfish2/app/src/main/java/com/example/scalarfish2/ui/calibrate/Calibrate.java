@@ -7,6 +7,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.hardware.Camera;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Process;
@@ -36,7 +37,6 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.example.scalarfish2.R;
-import com.example.scalarfish2.databinding.FragmentHomeBinding;
 import com.example.scalarfish2.ui.verify.Verify;
 
 import java.io.File;
@@ -106,8 +106,6 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
     boolean debug = true;
 
     int imgCounter = 0; /* Counts how many valid calibration images have been taken already */
-
-    private FragmentHomeBinding binding;
 
     // For enabling the camera view
     BaseLoaderCallback baseLoaderCallback = new BaseLoaderCallback(getContext()) {
@@ -195,7 +193,11 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
         javaCameraView.setCvCameraViewListener(this);
         // Set the front camera to the one that will be used
         javaCameraView.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_BACK);
-
+        
+        /* This shows that the preview does not "stretch" above the size of the display, but that it is created with false dimensions
+        javaCameraView.setScaleX(0.5f);
+        javaCameraView.setScaleY(0.5f);
+         */
 
         //javaCameraView.enableFpsMeter();
 
@@ -228,6 +230,9 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
             javaCameraView.setCameraPermissionGranted();
             // Permission has already been granted
         }
+
+
+
         return view;
     }
 

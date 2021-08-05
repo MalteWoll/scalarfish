@@ -64,17 +64,25 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
     private final Matrix mMatrix = new Matrix();
 
     private void updateMatrix() {
+        // Also display sizes, but the height value is a bit smaller? For example, cw=mw=1080, ch=2218, mh=1734 (device has 1080x2520 pixel)
         float mw = this.getWidth();
         float mh = this.getHeight();
+        Log.i("CamerBridgeFix", "mw: " + mw + ", mh: " + mh);
 
+        // Half the previous value
         float hw = this.getWidth() / 2.0f;
         float hh = this.getHeight() / 2.0f;
+        Log.i("CamerBridgeFix", "hw: " + hw + ", hh: " + hh);
 
+        // cw = display width, ch = display height
         float cw  = (float)Resources.getSystem().getDisplayMetrics().widthPixels; //Make sure to import Resources package
         float ch  = (float) Resources.getSystem().getDisplayMetrics().heightPixels;
+        Log.i("CamerBridgeFix", "cw: " + cw + ", ch: " + ch);
 
-        float scale = cw / (float)mh;
-        float scale2 = ch / (float)mw;
+        // This is were the error was: mw and mh were switched, creating a wrong scale and therefore a stretched out preview beyond the borders of the device
+        float scale = cw / (float)mw;
+        float scale2 = ch / (float)mh;
+        Log.i("CamerBridgeFix", "scale: " + scale + ", scale2: " + scale2);
         if(scale2 > scale){
             scale = scale2;
         }

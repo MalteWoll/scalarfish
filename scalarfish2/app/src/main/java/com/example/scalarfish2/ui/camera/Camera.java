@@ -143,6 +143,11 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
         // Set the front camera to the one that will be used
         javaCameraView.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_BACK);
 
+        /* This shows that the preview does not "stretch" above the size of the display, but that it is created with false dimensions
+        javaCameraView.setScaleX(0.5f);
+        javaCameraView.setScaleY(0.5f);
+         */
+
         // Get the buttons and switch
         btnCaptureImg = (ImageButton) view.findViewById(R.id.btnCaptureImgCamera);
         btnCaptureImg.setOnClickListener(this);

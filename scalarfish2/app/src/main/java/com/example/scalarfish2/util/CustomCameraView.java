@@ -20,6 +20,7 @@ public class CustomCameraView extends JavaCameraView implements PictureCallback 
     private static final String TAG = "Util::CustomCameraView";
     private String mPictureFileName;
     private Camera mCamera;
+    private Camera.Parameters params;
 
     public CustomCameraView(Context context, AttributeSet attrs) {
         super(context, attrs);

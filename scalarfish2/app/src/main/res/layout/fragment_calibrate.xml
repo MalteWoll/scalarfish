@@ -25,13 +25,13 @@
 
         <org.opencv.android.JavaCamera2View
             android:id="@+id/openCvCameraView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_width="0dp"
+            android:layout_height="578dp"
             android:visibility="gone"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            tools:layout_editor_absoluteY="303dp" />
+            tools:visibility="visible" />
 
         <Button
             android:id="@+id/btnCalibrate"
@@ -79,10 +79,10 @@
 
         <TextView
             android:id="@+id/txtCalibCounter"
-            android:layout_width="63dp"
-            android:layout_height="28dp"
-            android:text="0 / 30"
-            android:textSize="20sp"
+            android:layout_width="95dp"
+            android:layout_height="40dp"
+            android:text="0 / 50"
+            android:textSize="24sp"
             app:layout_constraintBottom_toBottomOf="@+id/btnCalibrate"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.954"
