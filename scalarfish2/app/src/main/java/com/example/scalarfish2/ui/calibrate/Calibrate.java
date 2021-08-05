@@ -193,11 +193,6 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
         javaCameraView.setCvCameraViewListener(this);
         // Set the front camera to the one that will be used
         javaCameraView.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_BACK);
-        
-        /* This shows that the preview does not "stretch" above the size of the display, but that it is created with false dimensions
-        javaCameraView.setScaleX(0.5f);
-        javaCameraView.setScaleY(0.5f);
-         */
 
         //javaCameraView.enableFpsMeter();
 
@@ -262,8 +257,7 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
                 transaction.commit();
                 break;
             case R.id.btnCaptureCalibImg:
-                Log.i("mRGBA", mRGBA.size().toString());
-                checkImageForChessboard(mRGBA);
+                checkImageForChessboard();
                 break;
         }
     }
@@ -353,31 +347,33 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
         return img_bitmap;
     }
 
-    public void checkImageForChessboard(Mat mat) {
+    public void checkImageForChessboard() {
         boolean found = false;
-        if(mat.size().height > 0 && mat.size().width > 0) {
-            found = Calib3d.findChessboardCorners(mat, boardSize, imageCorners, Calib3d.CALIB_CB_ADAPTIVE_THRESH + Calib3d.CALIB_CB_NORMALIZE_IMAGE + Calib3d.CALIB_CB_FAST_CHECK);
-        }
-        if(found) {
-            Log.i("Chessboard", "Chessboard found");
-            Log.i("ImageCorners", imageCorners.size().toString());
+        Log.i("mRGBA", mRGBA.size().toString());
+        if(mRGBA.size().height > 0 && mRGBA.size().width > 0) {
+            Mat tempMat = mRGBA;
+            found = Calib3d.findChessboardCorners(tempMat, boardSize, imageCorners, Calib3d.CALIB_CB_ADAPTIVE_THRESH + Calib3d.CALIB_CB_NORMALIZE_IMAGE + Calib3d.CALIB_CB_FAST_CHECK);
+            if (found) {
+                Log.i("Chessboard", "Chessboard found");
+                Log.i("ImageCorners", imageCorners.size().toString());
 
-            if(imageCorners.size().width > 0 && imageCorners.size().width > 0) {
-                imagePoints.add(imageCorners);
-                imageCornerCopy = imageCorners;
+                if (imageCorners.size().width > 0 && imageCorners.size().width > 0) {
+                    imagePoints.add(imageCorners);
+                    imageCornerCopy = imageCorners;
 
-                imageCorners = new MatOfPoint2f();
-                objectPoints.add(obj);
+                    imageCorners = new MatOfPoint2f();
+                    objectPoints.add(obj);
 
-                Log.i("objPoints", obj.size().toString());
+                    Log.i("objPoints", obj.size().toString());
 
-                mat.copyTo(savedImage);
+                    tempMat.copyTo(savedImage);
 
-                imgCounter++;
-                txtImgCounter.setText(imgCounter + " / 30");
+                    imgCounter++;
+                    txtImgCounter.setText(imgCounter + " / 50");
+                }
+            } else {
+                Log.i("Chessboard", "Chessboard not found");
             }
-        } else {
-            Log.i("Chessboard", "Chessboard not found");
         }
     }
 
@@ -395,8 +391,9 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
             imagePoints.add(imageCorners);
             imageCornerCopy = imageCorners;
 
-            imageCorners = new MatOfPoint2f(); /* WHYYY???? */
+            imageCorners = new MatOfPoint2f();
             objectPoints.add(obj);
+
             img_result.copyTo(savedImage); /* This is for saving the size? There should be an easier way than saving every time */
         }
         img_result.release(); /* Release the matrix manually, since Java doesn't detect the size behind it */

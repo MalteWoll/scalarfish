@@ -26,7 +26,7 @@
         <org.opencv.android.JavaCamera2View
             android:id="@+id/openCvCameraView"
             android:layout_width="0dp"
-            android:layout_height="578dp"
+            android:layout_height="match_parent"
             android:visibility="gone"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -82,6 +82,7 @@
             android:layout_width="95dp"
             android:layout_height="40dp"
             android:text="0 / 50"
+            android:textColor="#FFFFFF"
             android:textSize="24sp"
             app:layout_constraintBottom_toBottomOf="@+id/btnCalibrate"
             app:layout_constraintEnd_toEndOf="parent"

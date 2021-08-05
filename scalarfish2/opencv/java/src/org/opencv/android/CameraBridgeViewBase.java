@@ -60,6 +60,7 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
     public static final int GRAY = 2;
 
     // Added from https://gist.github.com/heaversm/63e8036af6a124aecf3b26898bd2a0ad#file-opencv-portait-camera-android-java to fix camera view
+    // (Almost fix it. The error that made correct preview size not possible was in here)
     // ====================================================================================================================
     private final Matrix mMatrix = new Matrix();
 
