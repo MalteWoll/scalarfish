@@ -100,6 +100,7 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
     Mat intrinsic = new Mat(3, 3, CvType.CV_32FC1); /* Intrinsic camera values? */
     Mat distCoeffs = new Mat(); /* The final matrix for undistorting images */
     Mat savedImage = new Mat(); /* saving a captured image from the camera for setting the image dimensions when calibrating */
+    Size imageSize = new Size();
 
     boolean calibrated;
     boolean calibInProgress = false;
@@ -282,97 +283,39 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
         }
     }
 
-    // Creates an unique image file name
-    // Not sure if this is still required, since we capture images from the live view without saving them first
-    // The only thing that needs to be saved in this fragment is the distortion matrix
-    private File createImageFile() throws IOException {
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        String imageFileName = "JPEG_" + timeStamp + "_";
-        // getActivity() is required for calling the function, since this is a fragment
-        File storageDir = getActivity().getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-        File image = File.createTempFile(
-                imageFileName,  /* prefix */
-                ".jpg",   /* suffix */
-                storageDir      /* directory */
-        );
-
-        currentPhotoPath = image.getAbsolutePath();
-        return image;
-    }
-
-    // Open the camera, take a picture and save the picture
-    // This uses intents to open the android camera, this is no longer necessary since we use the opencv camera
-    private void dispatchTakePictureIntent() {
-        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-
-        if (takePictureIntent.resolveActivity(getActivity().getPackageManager()) != null) {
-            photoFile = null;
-            try {
-                photoFile = createImageFile();
-                Log.i("File created", "Image file created: " + photoFile.toString());
-            } catch (IOException ex) {
-                // Error while creating file
-                Log.e("File creation error", ex.toString());
-            }
-
-            if (photoFile != null) {
-                photoURI = FileProvider.getUriForFile(getActivity(), /* 'getActivity' was 'this' in the example, but this is a fragment, not an activity */
-                        "com.example.android.fileprovider",
-                        photoFile);
-                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
-                startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
-            }
-        }
-    }
-
-    // Testing openCV with a filter
-    // Don't delete yet, some bmp -> Mat and reverse might be useful for later
-    public Bitmap openCvCannyFilter(File imgFile) {
-        Mat img = new Mat();
-
-        // Get the path of the image file and covert the file to a bitmap
-        Bitmap srcBitmap = BitmapFactory.decodeFile(imgFile.getAbsolutePath());
-        Bitmap bmp32 = srcBitmap.copy(Bitmap.Config.ARGB_8888, true);
-
-        // Convert the bitmap to a Mat
-        Utils.bitmapToMat(bmp32, img);
-
-        // OpenCV stuff
-        Imgproc.cvtColor(img, img, Imgproc.COLOR_RGB2BGRA);
-        Mat img_result = img.clone();
-        Imgproc.Canny(img, img_result, 80, 90);
-        Bitmap img_bitmap = Bitmap.createBitmap(img_result.cols(), img_result.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(img_result, img_bitmap);
-
-        return img_bitmap;
-    }
-
     public void checkImageForChessboard() {
         boolean found = false;
         Log.i("mRGBA", mRGBA.size().toString());
+        Log.i("imageCorners", imageCorners.toString());
         if(mRGBA.size().height > 0 && mRGBA.size().width > 0) {
+            Log.i("imageCorners", imageCorners.toString());
             Mat tempMat = mRGBA;
-            found = Calib3d.findChessboardCorners(tempMat, boardSize, imageCorners, Calib3d.CALIB_CB_ADAPTIVE_THRESH + Calib3d.CALIB_CB_NORMALIZE_IMAGE + Calib3d.CALIB_CB_FAST_CHECK);
-            if (found) {
-                Log.i("Chessboard", "Chessboard found");
-                Log.i("ImageCorners", imageCorners.size().toString());
+            try {
+                found = Calib3d.findChessboardCorners(tempMat, boardSize, imageCorners, Calib3d.CALIB_CB_ADAPTIVE_THRESH + Calib3d.CALIB_CB_NORMALIZE_IMAGE + Calib3d.CALIB_CB_FAST_CHECK);
+                if (found) {
+                    Log.i("Chessboard", "Chessboard found");
+                    Log.i("ImageCorners", imageCorners.size().toString());
 
-                if (imageCorners.size().width > 0 && imageCorners.size().width > 0) {
-                    imagePoints.add(imageCorners);
-                    imageCornerCopy = imageCorners;
+                    if (imageCorners.size().width > 0 && imageCorners.size().width > 0) {
+                        imagePoints.add(imageCorners);
+                        imageCornerCopy = imageCorners;
 
-                    imageCorners = new MatOfPoint2f();
-                    objectPoints.add(obj);
+                        imageCorners = new MatOfPoint2f();
+                        objectPoints.add(obj);
 
-                    Log.i("objPoints", obj.size().toString());
+                        Log.i("objPoints", obj.size().toString());
 
-                    tempMat.copyTo(savedImage);
+                        tempMat.copyTo(savedImage);
 
-                    imgCounter++;
-                    txtImgCounter.setText(imgCounter + " / 50");
+                        imgCounter++;
+                        txtImgCounter.setText(imgCounter + " / 50");
+                    }
+                } else {
+                    Log.i("Chessboard", "Chessboard not found");
                 }
-            } else {
-                Log.i("Chessboard", "Chessboard not found");
+
+            } catch (Exception e) {
+                Log.i("Error", e.toString());
             }
         }
     }
@@ -404,7 +347,10 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
     public void onCameraViewStarted(int width, int height) {
         Log.d("Camera", "onCameraViewStarted");
         mRGBA = new Mat(height, width, CvType.CV_8UC4);
-        //Log.i("mRGBA size", "Size on camera start: Height: " + height + ", Width: " + width); /* 720x960 */
+        imageSize.height = mRGBA.height();
+        imageSize.width = mRGBA.width();
+        Log.i("imageSize", imageSize.width + ", " + imageSize.height);
+        Log.i("mRGBA size", "Size on camera start: Height: " + height + ", Width: " + width); /* 720x960 */
     }
 
     @Override
@@ -525,7 +471,7 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
                     mRGBA.copyTo(savedImage);
                 }
 
-                Calib3d.calibrateCamera(objectPoints, imagePoints, savedImage.size(), intrinsic, distCoeffs, rvecs, tvecs);
+                Calib3d.calibrateCamera(objectPoints, imagePoints, imageSize, intrinsic, distCoeffs, rvecs, tvecs);
 
                 Message message = new Message();
                 Bundle bundle = new Bundle();
