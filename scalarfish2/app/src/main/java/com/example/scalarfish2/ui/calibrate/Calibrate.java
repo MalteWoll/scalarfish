@@ -313,7 +313,6 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
                 } else {
                     Log.i("Chessboard", "Chessboard not found");
                 }
-
             } catch (Exception e) {
                 Log.i("Error", e.toString());
             }
@@ -374,7 +373,7 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
 
         cameraCounter++;
         // Limit the fps, increase the number for less fps -> should help with processing speed
-        if(cameraCounter < 6 || calibInProgress) {
+        if(cameraCounter < 2 || calibInProgress) {
             return null;
         } else {
             if(!calibrated) {
