@@ -290,27 +290,32 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
         if(mRGBA.size().height > 0 && mRGBA.size().width > 0) {
             Log.i("imageCorners", imageCorners.toString());
             Mat tempMat = mRGBA;
-            found = Calib3d.findChessboardCorners(tempMat, boardSize, imageCorners, Calib3d.CALIB_CB_ADAPTIVE_THRESH + Calib3d.CALIB_CB_NORMALIZE_IMAGE + Calib3d.CALIB_CB_FAST_CHECK);
-            if (found) {
-                Log.i("Chessboard", "Chessboard found");
-                Log.i("ImageCorners", imageCorners.size().toString());
+            try {
+                found = Calib3d.findChessboardCorners(tempMat, boardSize, imageCorners, Calib3d.CALIB_CB_ADAPTIVE_THRESH + Calib3d.CALIB_CB_NORMALIZE_IMAGE + Calib3d.CALIB_CB_FAST_CHECK);
+                if (found) {
+                    Log.i("Chessboard", "Chessboard found");
+                    Log.i("ImageCorners", imageCorners.size().toString());
 
-                if (imageCorners.size().width > 0 && imageCorners.size().width > 0) {
-                    imagePoints.add(imageCorners);
-                    imageCornerCopy = imageCorners;
+                    if (imageCorners.size().width > 0 && imageCorners.size().width > 0) {
+                        imagePoints.add(imageCorners);
+                        imageCornerCopy = imageCorners;
 
-                    imageCorners = new MatOfPoint2f();
-                    objectPoints.add(obj);
+                        imageCorners = new MatOfPoint2f();
+                        objectPoints.add(obj);
 
-                    Log.i("objPoints", obj.size().toString());
+                        Log.i("objPoints", obj.size().toString());
 
-                    tempMat.copyTo(savedImage);
+                        tempMat.copyTo(savedImage);
 
-                    imgCounter++;
-                    txtImgCounter.setText(imgCounter + " / 50");
+                        imgCounter++;
+                        txtImgCounter.setText(imgCounter + " / 50");
+                    }
+                } else {
+                    Log.i("Chessboard", "Chessboard not found");
                 }
-            } else {
-                Log.i("Chessboard", "Chessboard not found");
+
+            } catch (Exception e) {
+                Log.i("Error", e.toString());
             }
         }
     }
