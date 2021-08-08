@@ -2,10 +2,12 @@ package com.example.scalarfish2.ui.setPoints;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PointF;
 import android.net.Uri;
@@ -68,6 +70,7 @@ public class SetPointsActivity extends AppCompatActivity implements View.OnClick
 
 
     public static class DrawingImageView extends androidx.appcompat.widget.AppCompatImageView {
+        public static PointF eyePoint;
         public static PointF point1;
         public static PointF point2;
         private static Paint paint = new Paint();
@@ -93,6 +96,7 @@ public class SetPointsActivity extends AppCompatActivity implements View.OnClick
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN:
                     if(point1 == null){
+                        eyePoint = new PointF(imageView.getWidth()/2, imageView.getHeight());
                         point1 = new PointF(x, y);
                         invalidate();
                         break;
@@ -111,17 +115,20 @@ public class SetPointsActivity extends AppCompatActivity implements View.OnClick
         @Override
         protected void onDraw( Canvas canvas) {
             super.onDraw(canvas);
+            paint.setColor(Color.rgb(190, 70,70));
+            paint.setStrokeWidth(5);
             if (point1 != null) {
+                canvas.drawLine(point1.x, point1.y, eyePoint.x, eyePoint.y, paint);
                 canvas.drawCircle(point1.x, point1.y, 20, paint);
+                canvas.drawCircle(imageView.getWidth()/2, imageView.getHeight(), 20, paint);
             }
             if (point2 != null) {
+                canvas.drawLine(point2.x, point2.y, eyePoint.x, eyePoint.y, paint);
                 canvas.drawCircle(point2.x, point2.y, 20, paint);
-                canvas.drawCircle(imageView.getWidth()/2, imageView.getHeight(), 20, paint);
             }
         }
 
         public static float calculateAngle(){
-            PointF eyePoint = new PointF(imageView.getWidth()/2, imageView.getHeight());
             Log.i("eyePoint", String.valueOf(eyePoint));
             PointF a = new PointF(point1.x - eyePoint.x, point1.y - eyePoint.y);
             PointF b = new PointF(point2.x - eyePoint.x, point2.y - eyePoint.y);
