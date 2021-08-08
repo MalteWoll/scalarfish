@@ -136,7 +136,7 @@ public class SetPointsActivity extends AppCompatActivity implements View.OnClick
             Log.i("b:", String.valueOf(b));
             float angle = (float) Math.toDegrees(Math.acos(((a.x * b.x) + (a.y * b.y)) / (a.length() * b.length())));
             Log.i("Angle:", String.valueOf(angle));
-            txtCalculatedAngle.setText(String.valueOf(angle));
+            txtCalculatedAngle.setText("Calculated Angle: " + String.valueOf(angle));
 
             return angle;
         }
