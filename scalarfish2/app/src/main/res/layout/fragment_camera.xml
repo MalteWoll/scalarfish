@@ -15,19 +15,20 @@
 
         <ImageView
             android:id="@+id/imageViewCamera"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
+            android:layout_width="298dp"
+            android:layout_height="537dp"
             android:rotation="0"
             android:src="@drawable/ic_menu_camera"
             app:layout_constraintBottom_toBottomOf="@+id/openCvCameraView3"
             app:layout_constraintEnd_toEndOf="@+id/openCvCameraView3"
+            app:layout_constraintHorizontal_bias="0.495"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="@+id/openCvCameraView3" />
 
-        <org.opencv.android.JavaCameraView
+        <com.example.scalarfish2.util.CustomCameraView
             android:id="@+id/openCvCameraView3"
-            android:layout_width="fill_parent"
-            android:layout_height="fill_parent"
+            android:layout_width="0dp"
+            android:layout_height="578dp"
             android:visibility="visible"
             opencv:camera_id="any"
             opencv:layout_constraintEnd_toEndOf="parent"

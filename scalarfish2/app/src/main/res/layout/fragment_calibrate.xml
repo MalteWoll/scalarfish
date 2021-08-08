@@ -23,26 +23,15 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintVertical_bias="0.916" />
 
-        <ImageView
-            android:id="@+id/imgViewCalibration"
-            android:layout_width="344dp"
-            android:layout_height="509dp"
-            android:src="@drawable/ic_menu_camera"
-            app:layout_constraintBottom_toTopOf="@+id/btnCaptureImg"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <org.opencv.android.JavaCameraView
-            android:layout_width="fill_parent"
-            android:layout_height="fill_parent"
-            android:visibility="gone"
+        <org.opencv.android.JavaCamera2View
             android:id="@+id/openCvCameraView"
-            opencv:show_fps="true"
-            opencv:camera_id="any"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:visibility="gone"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"/>
+            app:layout_constraintTop_toTopOf="parent"
+            tools:visibility="visible" />
 
         <Button
             android:id="@+id/btnCalibrate"
@@ -90,16 +79,18 @@
 
         <TextView
             android:id="@+id/txtCalibCounter"
-            android:layout_width="63dp"
-            android:layout_height="28dp"
-            android:text="0 / 30"
-            android:textSize="20sp"
+            android:layout_width="95dp"
+            android:layout_height="40dp"
+            android:text="0 / 50"
+            android:textColor="#FFFFFF"
+            android:textSize="24sp"
             app:layout_constraintBottom_toBottomOf="@+id/btnCalibrate"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.954"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintVertical_bias="0.022" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 </FrameLayout>

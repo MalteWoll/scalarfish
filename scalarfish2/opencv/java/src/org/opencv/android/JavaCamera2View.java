@@ -138,6 +138,9 @@ public class JavaCamera2View extends CameraBridgeViewBase {
         @Override
         public void onOpened(CameraDevice cameraDevice) {
             mCameraDevice = cameraDevice;
+
+
+
             createCameraPreviewSession();
         }
 

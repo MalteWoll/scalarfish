@@ -7,8 +7,10 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.hardware.Camera;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Process;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -27,6 +29,7 @@ import android.view.LayoutInflater;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -34,7 +37,6 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.example.scalarfish2.R;
-import com.example.scalarfish2.databinding.FragmentHomeBinding;
 import com.example.scalarfish2.ui.verify.Verify;
 
 import java.io.File;
@@ -46,6 +48,7 @@ import java.util.List;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
+import org.opencv.android.JavaCamera2View;
 import org.opencv.android.JavaCameraView;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
@@ -58,7 +61,7 @@ import org.opencv.calib3d.*;
 import org.opencv.core.MatOfPoint3f;
 import org.opencv.core.Point3;
 
-public class Calibrate extends Fragment implements View.OnClickListener, CameraBridgeViewBase.CvCameraViewListener2 {
+public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnClickListener, CameraBridgeViewBase.CvCameraViewListener2 {
     private static final int MY_CAMERA_REQUEST_CODE = 100;
 
     // For image capturing
@@ -80,7 +83,7 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
     File photoFile;
 
     // OpenCV camera
-    private JavaCameraView javaCameraView; /* the camera we are going to use instead of the android camera */
+    private JavaCamera2View javaCameraView; /* the camera we are going to use instead of the android camera */
     private Mat mRGBA; /* a matrix for copying the values of the current frame of the camera to */
     private final int PERMISSIONS_READ_CAMERA=1;
     int cameraCounter = 0; /* for counting and reducing fps */
@@ -103,8 +106,6 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
     boolean debug = true;
 
     int imgCounter = 0; /* Counts how many valid calibration images have been taken already */
-
-    private FragmentHomeBinding binding;
 
     // For enabling the camera view
     BaseLoaderCallback baseLoaderCallback = new BaseLoaderCallback(getContext()) {
@@ -188,11 +189,10 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
         txtImgCounter = (TextView) view.findViewById(R.id.txtCalibCounter);
 
         // Get the OpenCV camera view in the fragment's layout
-        javaCameraView = (JavaCameraView) view.findViewById(R.id.openCvCameraView);
+        javaCameraView = (JavaCamera2View) view.findViewById(R.id.openCvCameraView);
         javaCameraView.setCvCameraViewListener(this);
         // Set the front camera to the one that will be used
         javaCameraView.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_BACK);
-
 
         //javaCameraView.enableFpsMeter();
 
@@ -225,6 +225,9 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
             javaCameraView.setCameraPermissionGranted();
             // Permission has already been granted
         }
+
+
+
         return view;
     }
 
@@ -345,27 +348,40 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
     }
 
     public void checkImageForChessboard() {
-        boolean found = Calib3d.findChessboardCorners(mRGBA, boardSize, imageCorners, Calib3d.CALIB_CB_ADAPTIVE_THRESH + Calib3d.CALIB_CB_NORMALIZE_IMAGE + Calib3d.CALIB_CB_FAST_CHECK);
-        if(found) {
-            Log.i("Chessboard", "Chessboard found");
+        boolean found = false;
+        Log.i("mRGBA", mRGBA.size().toString());
+        if(mRGBA.size().height > 0 && mRGBA.size().width > 0) {
+            Mat tempMat = mRGBA;
+            found = Calib3d.findChessboardCorners(tempMat, boardSize, imageCorners, Calib3d.CALIB_CB_ADAPTIVE_THRESH + Calib3d.CALIB_CB_NORMALIZE_IMAGE + Calib3d.CALIB_CB_FAST_CHECK);
+            if (found) {
+                Log.i("Chessboard", "Chessboard found");
+                Log.i("ImageCorners", imageCorners.size().toString());
 
-            imagePoints.add(imageCorners);
-            imageCornerCopy = imageCorners;
+                if (imageCorners.size().width > 0 && imageCorners.size().width > 0) {
+                    imagePoints.add(imageCorners);
+                    imageCornerCopy = imageCorners;
 
-            imageCorners = new MatOfPoint2f();
-            objectPoints.add(obj);
-            mRGBA.copyTo(savedImage);
+                    imageCorners = new MatOfPoint2f();
+                    objectPoints.add(obj);
 
-            imgCounter++;
-            txtImgCounter.setText(imgCounter + " / 30");
-        } else {
-            Log.i("Chessboard", "Chessboard not found");
+                    Log.i("objPoints", obj.size().toString());
+
+                    tempMat.copyTo(savedImage);
+
+                    imgCounter++;
+                    txtImgCounter.setText(imgCounter + " / 50");
+                }
+            } else {
+                Log.i("Chessboard", "Chessboard not found");
+            }
         }
     }
 
     // Detecting the chessboard pattern in a Mat variable, corners are saved to the imageCorners variable, returns true if chessboard is detected
+    // This was to heavy on performance, we are not using it anymore
     public boolean chessboardDetection(Mat img_result) {
         // TODO: Everything in this method on another thread
+
         boolean found = Calib3d.findChessboardCorners(img_result, boardSize, imageCorners, Calib3d.CALIB_CB_ADAPTIVE_THRESH + Calib3d.CALIB_CB_NORMALIZE_IMAGE + Calib3d.CALIB_CB_FAST_CHECK);
 
         if(found) {
@@ -375,8 +391,9 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
             imagePoints.add(imageCorners);
             imageCornerCopy = imageCorners;
 
-            imageCorners = new MatOfPoint2f(); /* WHYYY???? */
+            imageCorners = new MatOfPoint2f();
             objectPoints.add(obj);
+
             img_result.copyTo(savedImage); /* This is for saving the size? There should be an easier way than saving every time */
         }
         img_result.release(); /* Release the matrix manually, since Java doesn't detect the size behind it */
@@ -468,6 +485,7 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
     public void onResume() {
         super.onResume();
         Log.d("onResume", "onResume");
+        ((AppCompatActivity)getActivity()).getSupportActionBar().hide();
         if (OpenCVLoader.initDebug())
         {
             Log.d("OpenCV", "OpenCV is initialised again");
@@ -480,6 +498,12 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
         }
     }
 
+    @Override
+    public void onStop() {
+        super.onStop();
+        ((AppCompatActivity)getActivity()).getSupportActionBar().show();
+    }
+
     public void calibrateCamera() {
         // Not disabling the camera froze the app previously, now it works. Disabling might still be advisable, because the calibration takes a moment.
         //javaCameraView.disableView();
@@ -487,13 +511,20 @@ public class Calibrate extends Fragment implements View.OnClickListener, CameraB
         // Create a new thread to calculate the result in that is no the main UI thread. This makes the calculation faster and stops the app from freezing.
         Thread calibrateThread = new Thread() {
             public void run() {
-
+                Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_DISPLAY); /* Hopefully, this speeds up calculations */
                 List<Mat> rvecs = new ArrayList<>();
                 List<Mat> tvecs = new ArrayList<>();
                 // TODO: Focal length = fx, fy
                 intrinsic.put(0, 0, 1);
                 intrinsic.put(1, 1, 1);
                 // calibrate
+
+                Log.i("savedImageSize", savedImage.size().toString());
+
+                if(savedImage.size().width <= 0 || savedImage.size().height <= 0) {
+                    mRGBA.copyTo(savedImage);
+                }
+
                 Calib3d.calibrateCamera(objectPoints, imagePoints, savedImage.size(), intrinsic, distCoeffs, rvecs, tvecs);
 
                 Message message = new Message();
