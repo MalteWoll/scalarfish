@@ -370,7 +370,7 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
 
         // Create a new Mat for grayscale
         Mat grayImage = new Mat();
-        
+
         if(calibInProgress) {
             return null;
         } else {
