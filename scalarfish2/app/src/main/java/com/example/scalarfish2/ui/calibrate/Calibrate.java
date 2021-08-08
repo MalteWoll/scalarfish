@@ -370,10 +370,8 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
 
         // Create a new Mat for grayscale
         Mat grayImage = new Mat();
-
-        cameraCounter++;
-        // Limit the fps, increase the number for less fps -> should help with processing speed
-        if(cameraCounter < 2 || calibInProgress) {
+        
+        if(calibInProgress) {
             return null;
         } else {
             if(!calibrated) {
