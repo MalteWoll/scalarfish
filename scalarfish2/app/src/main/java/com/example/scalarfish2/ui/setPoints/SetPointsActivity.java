@@ -24,6 +24,7 @@ public class SetPointsActivity extends AppCompatActivity implements View.OnClick
     static ImageView imageView;
     int maxPoints;
     Button btnCalibrateAngle;
+    Button btnResetPoints;
     static TextView txtCalculatedAngle;
     static int drawCase;
 
@@ -44,7 +45,9 @@ public class SetPointsActivity extends AppCompatActivity implements View.OnClick
         maxPoints = 0;
 
         btnCalibrateAngle = findViewById(R.id.btnCalculateAngle);
+        btnResetPoints = findViewById(R.id.btnResetPoints);
         btnCalibrateAngle.setOnClickListener(this);
+        btnResetPoints.setOnClickListener(this);
 
         txtCalculatedAngle = findViewById(R.id.txtCalculatedAngle);
 
@@ -58,6 +61,8 @@ public class SetPointsActivity extends AppCompatActivity implements View.OnClick
                 Log.i("btn", "Calculate Angle");
                 float angle = DrawingImageView.calculateAngle();
                 Log.i("Angle:", String.valueOf(angle));
+            case R.id.btnResetPoints:
+                DrawingImageView.removePoints();
         }
     }
 
@@ -104,7 +109,7 @@ public class SetPointsActivity extends AppCompatActivity implements View.OnClick
         }
 
         @Override
-        protected void onDraw(@NonNull Canvas canvas) {
+        protected void onDraw( Canvas canvas) {
             super.onDraw(canvas);
             if (point1 != null) {
                 canvas.drawCircle(point1.x, point1.y, 20, paint);
@@ -122,11 +127,17 @@ public class SetPointsActivity extends AppCompatActivity implements View.OnClick
             PointF b = new PointF(point2.x - eyePoint.x, point2.y - eyePoint.y);
             Log.i("a:", String.valueOf(a));
             Log.i("b:", String.valueOf(b));
-            float angle = (float) Math.toDegrees(Math.acos(((a.x* b.x) + (a.y * b.y))/ (a.length() * b.length())));
+            float angle = (float) Math.toDegrees(Math.acos(((a.x * b.x) + (a.y * b.y)) / (a.length() * b.length())));
             Log.i("Angle:", String.valueOf(angle));
             txtCalculatedAngle.setText(String.valueOf(angle));
 
             return angle;
+        }
+
+        public static void removePoints() {
+            point1 = null;
+            point2 = null;
+            paint = new Paint();
         }
     }
 }
