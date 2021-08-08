@@ -14,8 +14,8 @@
 
         <org.opencv.android.JavaCameraView
             android:id="@+id/openCvCameraView3"
-            android:layout_width="fill_parent"
-            android:layout_height="fill_parent"
+            android:layout_width="0dp"
+            android:layout_height="578dp"
             android:visibility="visible"
             opencv:camera_id="any"
             opencv:layout_constraintEnd_toEndOf="parent"

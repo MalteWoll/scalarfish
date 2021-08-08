@@ -1,3 +1,6 @@
+// https://github.com/opencv/opencv/tree/master/samples/android/tutorial-3-cameracontrol/src/org/opencv/samples/tutorial3
+// https://github.com/opencv/opencv/tree/master/samples/android
+
 package com.example.scalarfish2.ui.camera;
 
 import android.Manifest;
@@ -6,6 +9,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.media.Image;
 import android.os.Bundle;
 
@@ -18,19 +22,23 @@ import androidx.fragment.app.FragmentTransaction;
 import android.os.Environment;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CompoundButton;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Switch;
+import android.widget.Toast;
 
 import com.example.scalarfish2.R;
 import com.example.scalarfish2.ui.setPoints.SetPointsActivity;
 import com.example.scalarfish2.ui.verify.Verify;
+import com.example.scalarfish2.util.CustomCameraView;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
+import org.opencv.android.JavaCamera2View;
 import org.opencv.android.JavaCameraView;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
@@ -39,6 +47,7 @@ import org.opencv.core.Core;
 import org.opencv.core.CvException;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
 import java.io.ByteArrayOutputStream;
@@ -46,13 +55,14 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 public class Camera extends Fragment implements View.OnClickListener, CameraBridgeViewBase.CvCameraViewListener2 {
 
     // Interface
     View view; /* The view everything is in */
 
-    JavaCameraView javaCameraView;
+    CustomCameraView javaCameraView;
     private final int PERMISSIONS_READ_CAMERA=1;
     private Mat mRGBA; /* a matrix for copying the values of the current frame of the camera to */
     private Mat mRGBAcopy;
@@ -128,10 +138,15 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
         ((AppCompatActivity)getActivity()).getSupportActionBar().setTitle("Camera");
 
         // Get the OpenCV camera view in the fragment's layout
-        javaCameraView = (JavaCameraView) view.findViewById(R.id.openCvCameraView3);
+        javaCameraView = (CustomCameraView) view.findViewById(R.id.openCvCameraView3);
         javaCameraView.setCvCameraViewListener(this);
         // Set the front camera to the one that will be used
         javaCameraView.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_BACK);
+
+        /* This shows that the preview does not "stretch" above the size of the display, but that it is created with false dimensions
+        javaCameraView.setScaleX(0.5f);
+        javaCameraView.setScaleY(0.5f);
+         */
 
         // Get the buttons and switch
         btnCaptureImg = (ImageButton) view.findViewById(R.id.btnCaptureImgCamera);
@@ -204,6 +219,7 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
             }
         }
 
+
         return view;
     }
 
@@ -211,10 +227,13 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
     public void onClick(View v) {
         switch(v.getId()) {
             case R.id.btnCaptureImgCamera:
-                currentImg = mRGBAcopy;
+                mRGBAcopy.copyTo(currentImg);
 
                 //javaCameraView.disableView(); /* Disabling the camera view deletes the values of the Mat objects. Why? How to circumvent and keep values? */
+
                 imgBitmap = createBitmap(currentImg);
+
+                //imgBitmap = createBitmapByTakingImage();
                 imagePreview.setImageBitmap(imgBitmap);
 
                 // Hide the camera view to display the taken image
@@ -246,16 +265,34 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
         }
     }
 
+    private Bitmap createBitmapByTakingImage() {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
+        String currentDateandTime = sdf.format(new Date());
+        String fileName = Environment.getStorageDirectory().getPath() + "/img_" + currentDateandTime + ".jpg";
+
+        javaCameraView.takePicture(fileName);
+        Log.i("ImageSaved", fileName + " saved");
+        BitmapFactory.Options bmOptions = new BitmapFactory.Options();
+        Bitmap bmp = BitmapFactory.decodeFile(fileName, bmOptions);
+        return bmp;
+    }
+
     // TODO: Maybe move this to another thread
     private Bitmap createBitmap(Mat source) {
         Log.i("Source", source.toString());
         Bitmap bmp = null;
         Mat rgb = new Mat();
-        Imgproc.cvtColor(source, rgb, Imgproc.COLOR_BGR2RGB);
+
+        //Imgproc.cvtColor(source, rgb, Imgproc.COLOR_BGR2RGB);
+        rgb = source;
+
+        // Rotate the image by 90 degrees
+        Mat rotated = new Mat();
+        Core.rotate(rgb, rotated, Core.ROTATE_90_CLOCKWISE);
 
         try {
-            bmp = Bitmap.createBitmap(rgb.cols(), rgb.rows(), Bitmap.Config.ARGB_8888);
-            Utils.matToBitmap(rgb, bmp);
+            bmp = Bitmap.createBitmap(rotated.cols(), rotated.rows(), Bitmap.Config.ARGB_8888);
+            Utils.matToBitmap(rotated, bmp);
         }
         catch(CvException e) {
             Log.d("Exception", e.getMessage());
@@ -285,6 +322,10 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
         SharedPreferences.Editor editor = prefs.edit();
         editor.putString("lastFilePath", lastSavedImgPath);
         editor.commit();
+    }
+
+    public void onPictureTaken(byte[] data, Camera camera) {
+        imgBitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
     }
 
     @Override
@@ -324,6 +365,7 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
     public void onResume() {
         super.onResume();
         Log.d("onResume", "onResume");
+        ((AppCompatActivity)getActivity()).getSupportActionBar().hide();
         if (OpenCVLoader.initDebug())
         {
             Log.d("OpenCV", "OpenCV is initialised again");
@@ -337,8 +379,16 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
     }
 
     @Override
+    public void onStop() {
+        super.onStop();
+        ((AppCompatActivity)getActivity()).getSupportActionBar().show();
+    }
+
+    @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         mRGBA = inputFrame.rgba();
+
+        mRGBAcopy = new Mat();
 
         // Check if we want to return the undistorted image or the raw camera output
         if(useCalibration) {
@@ -347,7 +397,7 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
             mRGBAcopy = undistorted;
             return mRGBAcopy;
         } else {
-            mRGBAcopy = mRGBA;
+            mRGBA.copyTo(mRGBAcopy);
             return mRGBAcopy;
         }
     }
