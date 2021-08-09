@@ -1,3 +1,5 @@
+// Author: Malte Wollermann
+
 package com.example.scalarfish2.ui.verify;
 
 import android.Manifest;

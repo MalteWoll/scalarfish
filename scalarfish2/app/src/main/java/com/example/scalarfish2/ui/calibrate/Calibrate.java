@@ -1,3 +1,5 @@
+// Author: Malte Wollermann
+
 package com.example.scalarfish2.ui.calibrate;
 
 import android.Manifest;
