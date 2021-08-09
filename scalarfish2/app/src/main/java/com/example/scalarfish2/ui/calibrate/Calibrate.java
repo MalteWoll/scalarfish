@@ -233,11 +233,14 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
                 break;
             // When the calibration button is pressed and the calibration is started, make the spinner visible to show the user something is happening
             case R.id.btnCalibrate:
-                // Make the loading spinner visible
-                loadingSpinner.setVisibility(View.VISIBLE);
-                btnCalibrate.setVisibility(View.INVISIBLE);
-                calibInProgress = true;
-                calibrateCamera();
+                // Only start the calibration if there are actual image points available
+                if(imagePoints.size() > 0) {
+                    // Make the loading spinner visible
+                    loadingSpinner.setVisibility(View.VISIBLE);
+                    btnCalibrate.setVisibility(View.INVISIBLE);
+                    calibInProgress = true;
+                    calibrateCamera();
+                }
                 break;
             // After calibration, show the user the button to verify the result
             case R.id.btnVerify:

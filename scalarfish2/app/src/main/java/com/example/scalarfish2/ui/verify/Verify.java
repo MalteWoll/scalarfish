@@ -34,17 +34,12 @@ import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
 public class Verify extends Fragment implements View.OnClickListener, CameraBridgeViewBase.CvCameraViewListener2 {
-
-    // For image capturing
-    static final int REQUEST_IMAGE_CAPTURE = 1;
-
     View view;
     Button btnTakeImg;
 
     JavaCameraView javaCameraView;
     private final int PERMISSIONS_READ_CAMERA=1;
     private Mat mRGBA; /* a matrix for copying the values of the current frame of the camera to */
-    int cameraCounter = 0; /* for counting and reducing fps */
 
     Mat distCoeffs = new Mat(1, 5, CvType.CV_64FC1);
     Mat intrinsic = new Mat(3, 3, CvType.CV_64FC1); /* Intrinsic camera values */
@@ -59,7 +54,6 @@ public class Verify extends Fragment implements View.OnClickListener, CameraBrid
 
     boolean found = false;
     boolean debug = true;
-
 
     public Verify() {
         // Required empty public constructor
