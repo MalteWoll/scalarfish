@@ -1,6 +1,8 @@
 package com.example.scalarfish2.ui.home;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -21,6 +23,7 @@ import com.example.scalarfish2.databinding.FragmentHomeBinding;
 import com.example.scalarfish2.ui.calibrate.Calibrate;
 import com.example.scalarfish2.ui.camera.Camera;
 import com.example.scalarfish2.ui.setPoints.SetPointsActivity;
+import com.example.scalarfish2.ui.verify.Verify;
 
 public class HomeFragment extends Fragment implements View.OnClickListener {
 
@@ -30,6 +33,7 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
     View view;
     Button btnCalibrate;
     Button btnStart;
+    Button btnVerify;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -51,6 +55,8 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
         btnCalibrate.setOnClickListener(this);
         btnStart = (Button) root.findViewById(R.id.btnCamera);
         btnStart.setOnClickListener(this);
+        btnVerify = (Button) root.findViewById(R.id.btnVerifyMain);
+        btnVerify.setOnClickListener(this);
         return root;
     }
 
@@ -73,6 +79,31 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
                 transactionCamera.addToBackStack(null);
                 transactionCamera.commit();
                 break;
+            case R.id.btnVerifyMain:
+                Log.i("Button", "Verify button pressed.");
+                // If the device has not been calibrated yet, don't open the verify fragment
+                if(checkForPreviousCalib()) {
+                    Fragment fragmentVerify = new Verify();
+                    FragmentTransaction transactionVerify = getFragmentManager().beginTransaction();
+                    transactionVerify.replace(R.id.nav_host_fragment_content_main, fragmentVerify);
+                    transactionVerify.addToBackStack(null);
+                    transactionVerify.commit();
+                } else {
+                    Log.i("Verify Call", "No calibration yet.");
+                }
+                break;
+        }
+    }
+
+    // Use this method to check for previous calibration results
+    private boolean checkForPreviousCalib() {
+        SharedPreferences prefs = getActivity().getPreferences(Context.MODE_PRIVATE);
+        String data = prefs.getString("distCoeffs0", "");
+        Log.i("Data", data);
+        if(data != "") {
+            return true;
+        } else {
+            return false;
         }
     }
 

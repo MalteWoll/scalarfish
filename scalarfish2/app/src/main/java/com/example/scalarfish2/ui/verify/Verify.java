@@ -19,6 +19,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.Toast;
 
 import com.example.scalarfish2.R;
 
@@ -32,6 +33,9 @@ import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class Verify extends Fragment implements View.OnClickListener, CameraBridgeViewBase.CvCameraViewListener2 {
     View view;
@@ -51,6 +55,8 @@ public class Verify extends Fragment implements View.OnClickListener, CameraBrid
 
     Mat verificationImg = new MatOfPoint2f();
     Mat undistorted = new Mat();
+
+    List<Double> distances = new ArrayList<>();
 
     boolean found = false;
     boolean debug = true;
@@ -187,7 +193,7 @@ public class Verify extends Fragment implements View.OnClickListener, CameraBrid
         switch(v.getId()) {
             case R.id.btnTakeImage:
                 distanceBetweenPoints();
-                javaCameraView.disableView();
+                //javaCameraView.disableView();
                 break;
         }
     }
@@ -212,16 +218,49 @@ public class Verify extends Fragment implements View.OnClickListener, CameraBrid
     public void distanceBetweenPoints() {
         boolean chessboardFound = chessboardDetection(savedImage);
         Log.i("inMethod", "distBetweenPoints");
-        if(chessboardFound) {
+        if(chessboardFound && imageCornerCopy.size().height > 0 && imageCornerCopy.size().width > 0) {
             Log.i("inMethod", "distBetweenPoints - chessboard found");
-
-            // Calculate the distance between points of the chessboard. If the distances are equal, the camera should be calculated correctly.
+            distances.clear();
+            int counter = 0;
+            // Calculate the distance between points of the chessboard. If the distances are equal, the camera should be calibrated correctly.
             for(int i = 0; i < (boardSize.width * boardSize.height - 1); i++) {
                 double pow1 = Math.pow((imageCornerCopy.get(i+1,0)[0] - imageCornerCopy.get(i,0)[0]), 2);
                 double pow2 = Math.pow((imageCornerCopy.get(i+1,0)[1] - imageCornerCopy.get(i,0)[1]), 2);
                 double dist = Math.sqrt(pow1 + pow2);
-                Log.i("Distance", "Distance " + i + ": " + dist);
+                //Log.i("Distance", "Distance " + i + ": " + dist);
+
+                counter++;
+                if(counter % 9 == 0) {
+                    Log.i("Distance added", i + ": Deleted, " + String.valueOf(dist));
+                    counter = 0;
+                } else {
+                    distances.add(dist);
+                    Log.i("Distance added", i + ": " + String.valueOf(dist));
+                }
             }
+            Log.i("Distance size", String.valueOf(distances.size()));
+
+            double avg = 0;
+            for(int i = 0; i < distances.size(); i++) {
+                avg += distances.get(i);
+            }
+            avg = avg / ((int)distances.size());
+            Log.i("Average distance", String.valueOf(avg));
+
+            double var = 0;
+            for(int i = 0; i < distances.size(); i++) {
+                var += Math.pow(distances.get(i)-avg, 2);
+            }
+            var = var / (distances.size()-1);
+            double standardDeviation = Math.sqrt(var);
+            Log.i("Standard Deviation", String.valueOf(standardDeviation));
+
+            double avgStd = avg / standardDeviation;
+
+            CharSequence text = "Average distance: " + String.valueOf(avg) + "; Standard Deviation: " + String.valueOf(standardDeviation) + "; Avg/StdDeviation: " + String.valueOf(avgStd);
+            Toast toast = Toast.makeText(getContext(), text, Toast.LENGTH_LONG);
+            toast.show();
+
         } else {
             Log.i("inMethod", "distBetweenPoints - chessboard not found");
         }
