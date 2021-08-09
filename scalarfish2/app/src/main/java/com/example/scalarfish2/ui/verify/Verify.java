@@ -1,3 +1,5 @@
+// Author: Malte Wollermann
+
 package com.example.scalarfish2.ui.verify;
 
 import android.Manifest;
@@ -17,6 +19,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.Toast;
 
 import com.example.scalarfish2.R;
 
@@ -31,18 +34,16 @@ import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Verify extends Fragment implements View.OnClickListener, CameraBridgeViewBase.CvCameraViewListener2 {
-
-    // For image capturing
-    static final int REQUEST_IMAGE_CAPTURE = 1;
-
     View view;
     Button btnTakeImg;
 
     JavaCameraView javaCameraView;
     private final int PERMISSIONS_READ_CAMERA=1;
     private Mat mRGBA; /* a matrix for copying the values of the current frame of the camera to */
-    int cameraCounter = 0; /* for counting and reducing fps */
 
     Mat distCoeffs = new Mat(1, 5, CvType.CV_64FC1);
     Mat intrinsic = new Mat(3, 3, CvType.CV_64FC1); /* Intrinsic camera values */
@@ -55,9 +56,10 @@ public class Verify extends Fragment implements View.OnClickListener, CameraBrid
     Mat verificationImg = new MatOfPoint2f();
     Mat undistorted = new Mat();
 
+    List<Double> distances = new ArrayList<>();
+
     boolean found = false;
     boolean debug = true;
-
 
     public Verify() {
         // Required empty public constructor
@@ -191,41 +193,74 @@ public class Verify extends Fragment implements View.OnClickListener, CameraBrid
         switch(v.getId()) {
             case R.id.btnTakeImage:
                 distanceBetweenPoints();
-                javaCameraView.disableView();
+                //javaCameraView.disableView();
                 break;
         }
     }
 
     // Detecting the chessboard pattern in a Mat variable, corners are saved to the imageCorners variable, returns true if chessboard is detected
     public boolean chessboardDetection(Mat img_result) {
-        // TODO: Everything in this method on another thread
+        // TODO: Everything in this method on another thread (maybe? Is that a good idea?)
         boolean found = Calib3d.findChessboardCorners(img_result, boardSize, imageCorners, Calib3d.CALIB_CB_ADAPTIVE_THRESH + Calib3d.CALIB_CB_NORMALIZE_IMAGE + Calib3d.CALIB_CB_FAST_CHECK);
 
         if(found) {
             // When a chessboard has been detected, save the imageCorners by adding it to the list of corners
-
             imageCornerCopy = imageCorners;
-            imageCorners = new MatOfPoint2f(); /* WHYYY???? */
+            imageCorners = new MatOfPoint2f();
 
-            img_result.copyTo(savedImage); /* This is for saving the size? There should be an easier way than saving every time */
+            img_result.copyTo(savedImage);
         }
         img_result.release(); /* Release the matrix manually, since Java doesn't detect the size behind it */
         return found;
     }
 
+    // To verify the calibration, we measure the distance between points for a taken image of the chessboard. Equal distances between the points of a row mean good calibration results
     public void distanceBetweenPoints() {
         boolean chessboardFound = chessboardDetection(savedImage);
         Log.i("inMethod", "distBetweenPoints");
-        if(chessboardFound) {
+        if(chessboardFound && imageCornerCopy.size().height > 0 && imageCornerCopy.size().width > 0) {
             Log.i("inMethod", "distBetweenPoints - chessboard found");
-
-            // Calculate the distance between points of the chessboard. If the distance is roughly equal, the camera should be calculated correctly.
+            distances.clear();
+            int counter = 0;
+            // Calculate the distance between points of the chessboard. If the distances are equal, the camera should be calibrated correctly.
             for(int i = 0; i < (boardSize.width * boardSize.height - 1); i++) {
                 double pow1 = Math.pow((imageCornerCopy.get(i+1,0)[0] - imageCornerCopy.get(i,0)[0]), 2);
                 double pow2 = Math.pow((imageCornerCopy.get(i+1,0)[1] - imageCornerCopy.get(i,0)[1]), 2);
                 double dist = Math.sqrt(pow1 + pow2);
-                Log.i("Distance", "Distance " + i + ": " + dist);
+                //Log.i("Distance", "Distance " + i + ": " + dist);
+
+                counter++;
+                if(counter % 9 == 0) {
+                    Log.i("Distance added", i + ": Deleted, " + String.valueOf(dist));
+                    counter = 0;
+                } else {
+                    distances.add(dist);
+                    Log.i("Distance added", i + ": " + String.valueOf(dist));
+                }
             }
+            Log.i("Distance size", String.valueOf(distances.size()));
+
+            double avg = 0;
+            for(int i = 0; i < distances.size(); i++) {
+                avg += distances.get(i);
+            }
+            avg = avg / ((int)distances.size());
+            Log.i("Average distance", String.valueOf(avg));
+
+            double var = 0;
+            for(int i = 0; i < distances.size(); i++) {
+                var += Math.pow(distances.get(i)-avg, 2);
+            }
+            var = var / (distances.size()-1);
+            double standardDeviation = Math.sqrt(var);
+            Log.i("Standard Deviation", String.valueOf(standardDeviation));
+
+            double avgStd = avg / standardDeviation;
+
+            CharSequence text = "Average distance: " + String.valueOf(avg) + "; Standard Deviation: " + String.valueOf(standardDeviation) + "; Avg/StdDeviation: " + String.valueOf(avgStd);
+            Toast toast = Toast.makeText(getContext(), text, Toast.LENGTH_LONG);
+            toast.show();
+
         } else {
             Log.i("inMethod", "distBetweenPoints - chessboard not found");
         }
