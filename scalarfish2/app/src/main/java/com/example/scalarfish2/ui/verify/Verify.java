@@ -194,28 +194,28 @@ public class Verify extends Fragment implements View.OnClickListener, CameraBrid
 
     // Detecting the chessboard pattern in a Mat variable, corners are saved to the imageCorners variable, returns true if chessboard is detected
     public boolean chessboardDetection(Mat img_result) {
-        // TODO: Everything in this method on another thread
+        // TODO: Everything in this method on another thread (maybe? Is that a good idea?)
         boolean found = Calib3d.findChessboardCorners(img_result, boardSize, imageCorners, Calib3d.CALIB_CB_ADAPTIVE_THRESH + Calib3d.CALIB_CB_NORMALIZE_IMAGE + Calib3d.CALIB_CB_FAST_CHECK);
 
         if(found) {
             // When a chessboard has been detected, save the imageCorners by adding it to the list of corners
-
             imageCornerCopy = imageCorners;
-            imageCorners = new MatOfPoint2f(); /* WHYYY???? */
+            imageCorners = new MatOfPoint2f();
 
-            img_result.copyTo(savedImage); /* This is for saving the size? There should be an easier way than saving every time */
+            img_result.copyTo(savedImage);
         }
         img_result.release(); /* Release the matrix manually, since Java doesn't detect the size behind it */
         return found;
     }
 
+    // To verify the calibration, we measure the distance between points for a taken image of the chessboard. Equal distances between the points of a row mean good calibration results
     public void distanceBetweenPoints() {
         boolean chessboardFound = chessboardDetection(savedImage);
         Log.i("inMethod", "distBetweenPoints");
         if(chessboardFound) {
             Log.i("inMethod", "distBetweenPoints - chessboard found");
 
-            // Calculate the distance between points of the chessboard. If the distance is roughly equal, the camera should be calculated correctly.
+            // Calculate the distance between points of the chessboard. If the distances are equal, the camera should be calculated correctly.
             for(int i = 0; i < (boardSize.width * boardSize.height - 1); i++) {
                 double pow1 = Math.pow((imageCornerCopy.get(i+1,0)[0] - imageCornerCopy.get(i,0)[0]), 2);
                 double pow2 = Math.pow((imageCornerCopy.get(i+1,0)[1] - imageCornerCopy.get(i,0)[1]), 2);
