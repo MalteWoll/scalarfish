@@ -1,5 +1,4 @@
-// https://github.com/opencv/opencv/tree/master/samples/android/tutorial-3-cameracontrol/src/org/opencv/samples/tutorial3
-// https://github.com/opencv/opencv/tree/master/samples/android
+// Author: Malte Wollermann
 
 package com.example.scalarfish2.ui.camera;
 
@@ -9,37 +8,28 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.media.Image;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentTransaction;
 
-import android.os.Environment;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CompoundButton;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Switch;
-import android.widget.Toast;
 
 import com.example.scalarfish2.R;
 import com.example.scalarfish2.ui.setPoints.SetPointsActivity;
-import com.example.scalarfish2.ui.verify.Verify;
 import com.example.scalarfish2.util.CustomCameraView;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
-import org.opencv.android.JavaCamera2View;
-import org.opencv.android.JavaCameraView;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.calib3d.Calib3d;
@@ -47,30 +37,25 @@ import org.opencv.core.Core;
 import org.opencv.core.CvException;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.core.Size;
-import org.opencv.imgproc.Imgproc;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
 
 public class Camera extends Fragment implements View.OnClickListener, CameraBridgeViewBase.CvCameraViewListener2 {
 
     // Interface
     View view; /* The view everything is in */
 
+    // Camera view and settings
     CustomCameraView javaCameraView;
     private final int PERMISSIONS_READ_CAMERA=1;
     private Mat mRGBA; /* a matrix for copying the values of the current frame of the camera to */
     private Mat mRGBAcopy;
-    int cameraCounter = 0; /* for counting and reducing fps */
 
+    // Matrices for distortion and images
     Mat distCoeffs = new Mat(1, 5, CvType.CV_64FC1);
     Mat intrinsic = new Mat(3, 3, CvType.CV_64FC1); /* Intrinsic camera values */
-
     Mat undistorted = new Mat();
     Mat currentImg = new Mat();
 
@@ -83,8 +68,8 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
 
     boolean useCalibration = false; /* Value of the switch on top to decide if the calibrated image should be used */
 
+    // Image path and bitmap file
     String lastSavedImgPath;
-
     Bitmap imgBitmap;
 
     public Camera() {
@@ -143,12 +128,7 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
         // Set the front camera to the one that will be used
         javaCameraView.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_BACK);
 
-        /* This shows that the preview does not "stretch" above the size of the display, but that it is created with false dimensions
-        javaCameraView.setScaleX(0.5f);
-        javaCameraView.setScaleY(0.5f);
-         */
-
-        // Get the buttons and switch
+        // Get the buttons and switch from the xml file
         btnCaptureImg = (ImageButton) view.findViewById(R.id.btnCaptureImgCamera);
         btnCaptureImg.setOnClickListener(this);
 
@@ -202,24 +182,28 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
             // Permission has already been granted
         }
 
+        // Calibration should not be done everytime the user starts the app, so the distortion matrix is saved in the shared preferences
+        // Since the matrix is a C++ object and in shared preferences only integers, floats and strings can be saved, the entries must be read out one by one
         SharedPreferences prefs = getActivity().getPreferences(Context.MODE_PRIVATE);
         for(int i = 0; i < 5; i++) {
+            // Reading out the single matrix values
             String data = prefs.getString("distCoeffs"+i, "");
+            // Putting the values into the matrix object of the distortion matrix
             distCoeffs.put(0, i, Double.valueOf(data));
         }
 
+        // Debug
         Log.i("distCoeffs", distCoeffs.dump());
         Log.i("distCoeffs", distCoeffs.toString());
 
         // Intrinsic camera parameters
+        // Same idea as above, read out the previously set intrinsic camera values and apply them
         for(int i = 0; i < 3; i++) {
             for(int j = 0; j < 3; j++) {
                 String data = prefs.getString("intrinsic"+i+j, "");
                 intrinsic.put(i, j, Double.valueOf(data));
             }
         }
-
-
         return view;
     }
 
@@ -227,35 +211,29 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
     public void onClick(View v) {
         switch(v.getId()) {
             case R.id.btnCaptureImgCamera:
-                mRGBAcopy.copyTo(currentImg);
-
-                //javaCameraView.disableView(); /* Disabling the camera view deletes the values of the Mat objects. Why? How to circumvent and keep values? */
-
-                imgBitmap = createBitmap(currentImg);
-
-                //imgBitmap = createBitmapByTakingImage();
-                imagePreview.setImageBitmap(imgBitmap);
-
-                // Hide the camera view to display the taken image
-                javaCameraView.setVisibility(View.INVISIBLE);
-
-                btnConfirmImg.setVisibility(View.VISIBLE);
-                btnCancelImg.setVisibility(View.VISIBLE);
-                btnCaptureImg.setVisibility(View.INVISIBLE);
+                // This randomly throws an error on occasion when trying to create the bitmap: Width and Height must be > 0, not sure why at the moment.
+                // For now, a try-catch block solves this
+                try {
+                    // Copy the current matrix of the camera to a new object, create a bitmap file from it, change button visibilities
+                    mRGBAcopy.copyTo(currentImg);
+                    imgBitmap = createBitmap(currentImg);
+                    imagePreview.setImageBitmap(imgBitmap);
+                    javaCameraView.setVisibility(View.INVISIBLE);
+                    btnConfirmImg.setVisibility(View.VISIBLE);
+                    btnCancelImg.setVisibility(View.VISIBLE);
+                    btnCaptureImg.setVisibility(View.INVISIBLE);
+                } catch(Exception e) {
+                    Log.e("Error", e.toString());
+                }
                 break;
             case R.id.btnConfirmImg:
-                //createAndSaveBitmap(currentImg);
-                /*ByteArrayOutputStream bStream = new ByteArrayOutputStream();
-                imgBitmap.compress(Bitmap.CompressFormat.PNG, 100, bStream);
-                byte[] byteArray = bStream.toByteArray();
-                Intent i = new Intent(getActivity(), SetPointsActivity.class);
-                i.putExtra("currentImg", byteArray);
-                startActivity(i);*/
+                // If confirmed, save the bitmap file to the device and start the activity to calculate the angles
                 saveBitmap(imgBitmap);
                 Intent intent = new Intent(getActivity(), SetPointsActivity.class);
                 startActivity(intent);
                 break;
             case R.id.btnCancelImg:
+                // If canceled, change button visibilities back and reset the matrix object
                 currentImg = new Mat();
                 btnCancelImg.setVisibility(View.INVISIBLE);
                 btnConfirmImg.setVisibility(View.INVISIBLE);
@@ -265,19 +243,6 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
         }
     }
 
-    private Bitmap createBitmapByTakingImage() {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
-        String currentDateandTime = sdf.format(new Date());
-        String fileName = Environment.getStorageDirectory().getPath() + "/img_" + currentDateandTime + ".jpg";
-
-        javaCameraView.takePicture(fileName);
-        Log.i("ImageSaved", fileName + " saved");
-        BitmapFactory.Options bmOptions = new BitmapFactory.Options();
-        Bitmap bmp = BitmapFactory.decodeFile(fileName, bmOptions);
-        return bmp;
-    }
-
-    // TODO: Maybe move this to another thread
     private Bitmap createBitmap(Mat source) {
         Log.i("Source", source.toString());
         Bitmap bmp = null;
@@ -286,12 +251,14 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
         //Imgproc.cvtColor(source, rgb, Imgproc.COLOR_BGR2RGB);
         rgb = source;
 
-        // Rotate the image by 90 degrees
+        // Rotate the image by 90 degrees, as it is always rotated - no idea why. This works without loss of data anyways.
         Mat rotated = new Mat();
         Core.rotate(rgb, rotated, Core.ROTATE_90_CLOCKWISE);
 
         try {
+            // Creation of the actual bitmap file: First, set the size, based on the matrix size
             bmp = Bitmap.createBitmap(rotated.cols(), rotated.rows(), Bitmap.Config.ARGB_8888);
+            // Then create the image from the matrix
             Utils.matToBitmap(rotated, bmp);
         }
         catch(CvException e) {
@@ -306,6 +273,7 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
         String imageFileName = timeStamp + ".jpg";
 
         try {
+            // Save the file to the device
             FileOutputStream fileOutputStream = getContext().openFileOutput(imageFileName, Context.MODE_PRIVATE);
             bmp.compress(Bitmap.CompressFormat.PNG, 100, fileOutputStream);
             fileOutputStream.close();
@@ -318,21 +286,19 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
         lastSavedImgPath = getContext().getFilesDir().listFiles()[getContext().getFilesDir().listFiles().length-1].toString();
         Log.i("LastSavedImgPath", lastSavedImgPath);
 
+        // Save the path to the image in shared preferences, to be read out when calculating the angle
         SharedPreferences prefs = getContext().getSharedPreferences("lastImage",Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
         editor.putString("lastFilePath", lastSavedImgPath);
         editor.commit();
     }
 
-    public void onPictureTaken(byte[] data, Camera camera) {
-        imgBitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
-    }
-
     @Override
     public void onCameraViewStarted(int width, int height) {
         Log.d("Camera", "onCameraViewStarted");
         mRGBA = new Mat(height, width, CvType.CV_8UC4);
-        //Log.i("mRGBA size", "Size on camera start: Height: " + height + ", Width: " + width); /* 720x960 */
+        // Debug
+        Log.i("mRGBA size", "Size on camera start: Height: " + height + ", Width: " + width); /* 720x960 */
     }
 
     @Override
@@ -387,14 +353,15 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         mRGBA = inputFrame.rgba();
-
         mRGBAcopy = new Mat();
 
         // Check if we want to return the undistorted image or the raw camera output
+        // This is only for our prototype: The final app would only show the undistorted image
         if(useCalibration) {
             Calib3d.undistort(mRGBA, undistorted, intrinsic, distCoeffs);
             // To save the current frame in one object, no matter if distorted or not, we copy the value to that matrix
             mRGBAcopy = undistorted;
+            Log.i("cameraFrameUndistorted", mRGBAcopy.toString());
             return mRGBAcopy;
         } else {
             mRGBA.copyTo(mRGBAcopy);
