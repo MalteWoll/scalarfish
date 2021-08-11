@@ -70,9 +70,9 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
         float mh = this.getHeight();
         Log.i("CameraBridgeFix", "mw: " + mw + ", mh: " + mh);
 
-        // Half the previous value
-        float hw = this.getWidth() / 2.0f;
-        float hh = this.getHeight() / 2.0f;
+        // Half the previous value (to center the preview?)
+        float hw = this.getWidth() / 2f;
+        float hh = this.getHeight() / 2f;
         Log.i("CameraBridgeFix", "hw: " + hw + ", hh: " + hh);
 
         // cw = display width, ch = display height
@@ -80,12 +80,13 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
         float ch  = (float) Resources.getSystem().getDisplayMetrics().heightPixels;
         Log.i("CameraBridgeFix", "cw: " + cw + ", ch: " + ch);
 
-        // This is were the error was: mw and mh were switched, creating a wrong scale and therefore a stretched out preview beyond the borders of the device
-        float scale = cw / (float)mw;
-        float scale2 = ch / (float)mh;
+        // This is where the error was: mw and mh were switched, creating a wrong scale and therefore a stretched out preview beyond the borders of the device
+        float scale = (cw / (float)mw);
+        float scale2 = (ch / (float)mh);
         Log.i("CameraBridgeFix", "scale: " + scale + ", scale2: " + scale2);
         if(scale2 > scale){
-            scale = scale2;
+            // Change this value to increase/decrease the camera preview size
+            scale = scale2*1.3f;
         }
 
         boolean isFrontCamera = mCameraIndex == CAMERA_ID_FRONT;
