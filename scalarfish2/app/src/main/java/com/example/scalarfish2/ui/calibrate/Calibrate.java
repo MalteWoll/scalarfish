@@ -459,15 +459,8 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
                 List<Mat> rvecs = new ArrayList<>();
                 List<Mat> tvecs = new ArrayList<>();
 
-                // TODO: Focal length = fx, fy
                 intrinsic.put(0, 0, 1);
                 intrinsic.put(1, 1, 1);
-
-                // This was not reliable and has been replaced
-                Log.i("savedImageSize", savedImage.size().toString());
-                if(savedImage.size().width <= 0 || savedImage.size().height <= 0) {
-                    mRGBA.copyTo(savedImage);
-                }
 
                 // Calibration of the camera with object points, image points, size of the image and intrinsic camera values, returns a 5x1 distortion matrix
                 Calib3d.calibrateCamera(objectPoints, imagePoints, imageSize, intrinsic, distCoeffs, rvecs, tvecs);
@@ -477,7 +470,7 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
                 bundle.putString("Calibrationresult", "Success");
                 message.setData(bundle);
 
-                // Send a message to the handler, this is required
+                // Send a message to the handler
                 handler.sendMessage(message);
             }
         };
