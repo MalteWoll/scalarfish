@@ -1,3 +1,5 @@
+// Author: Malte Wollermann
+
 package com.example.scalarfish2.ui.calibrate;
 
 import android.Manifest;
@@ -62,11 +64,6 @@ import org.opencv.core.MatOfPoint3f;
 import org.opencv.core.Point3;
 
 public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnClickListener, CameraBridgeViewBase.CvCameraViewListener2 {
-    private static final int MY_CAMERA_REQUEST_CODE = 100;
-
-    // For image capturing
-    static final int REQUEST_IMAGE_CAPTURE = 1;
-
     // For accessing the elements in the fragment
     ImageView imgView; /* This is not needed, for now, since we are live capturing the images */
     View view; /* The view everything is in */
@@ -77,16 +74,10 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
     TextView txtImgCounter; /* text counter for valid images taken */
     ProgressBar loadingSpinner; /* circular spinner, displaying calculation */
 
-    // For creating a path to save the image to, not needed for now
-    String currentPhotoPath;
-    Uri photoURI;
-    File photoFile;
-
     // OpenCV camera
     private JavaCamera2View javaCameraView; /* the camera we are going to use instead of the android camera */
     private Mat mRGBA; /* a matrix for copying the values of the current frame of the camera to */
     private final int PERMISSIONS_READ_CAMERA=1;
-    int cameraCounter = 0; /* for counting and reducing fps */
 
     // Calibration values
     Size boardSize = new Size(9,6); /* The size of the chessboard */
@@ -100,7 +91,7 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
     Mat intrinsic = new Mat(3, 3, CvType.CV_32FC1); /* Intrinsic camera values? */
     Mat distCoeffs = new Mat(); /* The final matrix for undistorting images */
     Mat savedImage = new Mat(); /* saving a captured image from the camera for setting the image dimensions when calibrating */
-    Size imageSize = new Size();
+    Size imageSize = new Size(); /* Image size for calibration, a size is required */
 
     boolean calibrated;
     boolean calibInProgress = false;
@@ -187,6 +178,7 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
         loadingSpinner = (ProgressBar) view.findViewById(R.id.progressBar);
         loadingSpinner.setVisibility(View.INVISIBLE);
 
+        // Get the text view for displaying the amount of valid calibration images
         txtImgCounter = (TextView) view.findViewById(R.id.txtCalibCounter);
 
         // Get the OpenCV camera view in the fragment's layout
@@ -195,10 +187,8 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
         // Set the front camera to the one that will be used
         javaCameraView.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_BACK);
 
-        //javaCameraView.enableFpsMeter();
-
         // Get the image view to display the captured image on
-        // This is not used at the moment
+        // This is not used at the moment (?)
         imgView = (ImageView) view.findViewById(R.id.imgViewCalibration);
 
         // Permission check for camera
@@ -226,15 +216,13 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
             javaCameraView.setCameraPermissionGranted();
             // Permission has already been granted
         }
-
-
-
         return view;
     }
 
     @Override
     public void onClick(View v) {
         switch(v.getId()) {
+            // Button for starting the calibration process
             case R.id.btnCaptureImg:
                 // Make the OpenCV camera view visible when the button is pressed
                 javaCameraView.setVisibility(SurfaceView.VISIBLE);
@@ -243,13 +231,18 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
                 // Enable the button to take images
                 btnCaptureCalibImg.setVisibility(View.VISIBLE);
                 break;
+            // When the calibration button is pressed and the calibration is started, make the spinner visible to show the user something is happening
             case R.id.btnCalibrate:
-                // Make the loading spinner visible
-                loadingSpinner.setVisibility(View.VISIBLE);
-                btnCalibrate.setVisibility(View.INVISIBLE);
-                calibInProgress = true;
-                calibrateCamera();
+                // Only start the calibration if there are actual image points available
+                if(imagePoints.size() > 0) {
+                    // Make the loading spinner visible
+                    loadingSpinner.setVisibility(View.VISIBLE);
+                    btnCalibrate.setVisibility(View.INVISIBLE);
+                    calibInProgress = true;
+                    calibrateCamera();
+                }
                 break;
+            // After calibration, show the user the button to verify the result
             case R.id.btnVerify:
                 Fragment fragment = new Verify();
                 FragmentTransaction transaction = getFragmentManager().beginTransaction();
@@ -257,8 +250,9 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
                 transaction.addToBackStack(null);
                 transaction.commit();
                 break;
+            // 'Take' an image and check for the chessboard in it
             case R.id.btnCaptureCalibImg:
-                checkImageForChessboard();
+                checkImageForChessboard(mRGBA);
                 break;
         }
     }
@@ -283,49 +277,73 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
         }
     }
 
-    public void checkImageForChessboard() {
-        boolean found = false;
-        Log.i("mRGBA", mRGBA.size().toString());
-        Log.i("imageCorners", imageCorners.toString());
-        if(mRGBA.size().height > 0 && mRGBA.size().width > 0) {
-            Log.i("imageCorners", imageCorners.toString());
-            Mat tempMat = mRGBA;
-            try {
-                found = Calib3d.findChessboardCorners(tempMat, boardSize, imageCorners, Calib3d.CALIB_CB_ADAPTIVE_THRESH + Calib3d.CALIB_CB_NORMALIZE_IMAGE + Calib3d.CALIB_CB_FAST_CHECK);
-                if (found) {
-                    Log.i("Chessboard", "Chessboard found");
-                    Log.i("ImageCorners", imageCorners.size().toString());
+    // Method for checking for the chessboard pattern. The actual checking is done in another thread, to use more processing power.
+    public void checkImageForChessboard(Mat imgMat) {
+        Thread patternCheckThread = new Thread() {
+            public void run() {
+                boolean found = false;
+                // Only start the process if the image we are looking in is valid (Although other fixes should have made this redundant)
+                if (imgMat.size().height > 0 && imgMat.size().width > 0) {
+                    Log.i("imageCorners", imageCorners.toString());
+                    Mat tempMat = imgMat;
+                    try {
+                        // Call the method for finding the chessboard in the image
+                        found = Calib3d.findChessboardCorners(tempMat, boardSize, imageCorners, Calib3d.CALIB_CB_ADAPTIVE_THRESH + Calib3d.CALIB_CB_NORMALIZE_IMAGE + Calib3d.CALIB_CB_FAST_CHECK);
+                        if (found) {
+                            Log.i("Chessboard", "Chessboard found");
+                            Log.i("ImageCorners", imageCorners.size().toString());
 
-                    if (imageCorners.size().width > 0 && imageCorners.size().width > 0) {
-                        imagePoints.add(imageCorners);
-                        imageCornerCopy = imageCorners;
+                            // If the chessboard has been found and the resulting positions of the chessboard are valid (if they are not, calibration is not possible)...
+                            if (imageCorners.size().width > 0 && imageCorners.size().width > 0) {
+                                // ... add the image points to the array of image points
+                                imagePoints.add(imageCorners);
+                                imageCornerCopy = imageCorners;
 
-                        imageCorners = new MatOfPoint2f();
-                        objectPoints.add(obj);
+                                // Then reset the object for the image corners
+                                imageCorners = new MatOfPoint2f();
+                                // Also add the object points matrix
+                                objectPoints.add(obj);
 
-                        Log.i("objPoints", obj.size().toString());
+                                // Debug
+                                Log.i("objPoints", obj.size().toString());
 
-                        tempMat.copyTo(savedImage);
+                                // This should not be required anymore
+                                tempMat.copyTo(savedImage);
 
-                        imgCounter++;
-                        txtImgCounter.setText(imgCounter + " / 50");
+                                // For a valid image, increase the counter by one. This is so far purely visual
+                                imgCounter++;
+                                txtImgCounter.setText(imgCounter + " / 50");
+                            }
+                        } else {
+                            // TODO: Replace this with a toast?
+                            Log.i("Chessboard", "Chessboard not found");
+                        }
+                    } catch (Exception e) {
+                        Log.i("Error", e.toString());
                     }
-                } else {
-                    Log.i("Chessboard", "Chessboard not found");
                 }
-            } catch (Exception e) {
-                Log.i("Error", e.toString());
+
+            Message message = new Message();
+            Bundle bundle = new Bundle();
+            if(found) {
+                bundle.putString("PatternCheck", "Success");
+            } else {
+                bundle.putString("PatternCheck", "Failure");
             }
-        }
+            message.setData(bundle);
+
+            // Send a message to the handler
+            handler2.sendMessage(message);
+            }
+        };
+        patternCheckThread.start();
     }
 
     // Detecting the chessboard pattern in a Mat variable, corners are saved to the imageCorners variable, returns true if chessboard is detected
-    // This was to heavy on performance, we are not using it anymore
+    // This was too heavy on performance when used for every camera frame, we are not using it anymore
     public boolean chessboardDetection(Mat img_result) {
         // TODO: Everything in this method on another thread
-
         boolean found = Calib3d.findChessboardCorners(img_result, boardSize, imageCorners, Calib3d.CALIB_CB_ADAPTIVE_THRESH + Calib3d.CALIB_CB_NORMALIZE_IMAGE + Calib3d.CALIB_CB_FAST_CHECK);
-
         if(found) {
             // When a chessboard has been detected, save the imageCorners by adding it to the list of corners
             // TODO: (Maybe) Apply functions from https://opencv-java-tutorials.readthedocs.io/en/latest/09-camera-calibration.html for better calibration result (cornerSubPix)
@@ -346,6 +364,7 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
     public void onCameraViewStarted(int width, int height) {
         Log.d("Camera", "onCameraViewStarted");
         mRGBA = new Mat(height, width, CvType.CV_8UC4);
+        // Save the sizes of the camera on initialization to later use it as parameter in the calibration method
         imageSize.height = mRGBA.height();
         imageSize.width = mRGBA.width();
         Log.i("imageSize", imageSize.width + ", " + imageSize.height);
@@ -360,9 +379,6 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
 
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
-
-        // TODO: Autofokussierung deaktivieren!
-
         boolean found;
 
         // Grab the frame shown in the camera and assign it to the mRGBA variable
@@ -375,6 +391,7 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
             return null;
         } else {
             if(!calibrated) {
+                // The following drew in the chessboard in real time, if detected. While looking nice, it was too much performance loss
                 // Convert to gray image for faster processing
                 //Imgproc.cvtColor(mRGBA, grayImage, Imgproc.COLOR_BGR2GRAY);
 
@@ -387,6 +404,7 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
                 } else {
                     Log.d("Chessboard", "Chessboard false");
                 }*/
+                // This way, the raw camera output is displayed
                 return mRGBA;
             } else {
                 Mat undistorted = new Mat();
@@ -397,8 +415,10 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
                     debug = false;
                 }
 
+                // This method undistorts the camera output with the intrinsic camera values and the distortion matrix
                 Calib3d.undistort(mRGBA, undistorted, intrinsic, distCoeffs);
 
+                // If calibration already happened, the undistorted camera feed is returned
                 return undistorted;
             }
         }
@@ -448,57 +468,51 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
     }
 
     public void calibrateCamera() {
-        // Not disabling the camera froze the app previously, now it works. Disabling might still be advisable, because the calibration takes a moment.
-        //javaCameraView.disableView();
-
-        // Create a new thread to calculate the result in that is no the main UI thread. This makes the calculation faster and stops the app from freezing.
+        // Create a new thread to calculate the result in that is no the main UI thread. This makes the calculation faster and prevents the app from freezing.
         Thread calibrateThread = new Thread() {
             public void run() {
-                Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_DISPLAY); /* Hopefully, this speeds up calculations */
+                Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_DISPLAY); /* Hopefully this speeds up calculations */
                 List<Mat> rvecs = new ArrayList<>();
                 List<Mat> tvecs = new ArrayList<>();
-                // TODO: Focal length = fx, fy
+
                 intrinsic.put(0, 0, 1);
                 intrinsic.put(1, 1, 1);
-                // calibrate
 
-                Log.i("savedImageSize", savedImage.size().toString());
-
-                if(savedImage.size().width <= 0 || savedImage.size().height <= 0) {
-                    mRGBA.copyTo(savedImage);
-                }
-
+                // Calibration of the camera with object points, image points, size of the image and intrinsic camera values, returns a 5x1 distortion matrix
                 Calib3d.calibrateCamera(objectPoints, imagePoints, imageSize, intrinsic, distCoeffs, rvecs, tvecs);
 
                 Message message = new Message();
                 Bundle bundle = new Bundle();
                 bundle.putString("Calibrationresult", "Success");
                 message.setData(bundle);
+
+                // Send a message to the handler
                 handler.sendMessage(message);
             }
         };
 
+        // Start the thread for calibration
         calibrateThread.start();
     }
 
+    // The handler that receives a message after calibration is completed
     private Handler handler = new Handler() {
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
             Bundle bundle = msg.getData();
             String result = bundle.getString("CalibrationResult");
+
+            // Debug
             Log.i("CalibrationResult", "Calibration successful");
             Log.i("distCoeffs", distCoeffs.dump());
-
             Log.i("distCoeffs", distCoeffs.toString());
 
-            // Save the values of the distortion matrix to shared preferences
+            // Save the values of the distortion matrix to shared preferences to load them in other fragments or activities
             SharedPreferences prefs = getActivity().getPreferences(Context.MODE_PRIVATE);
             SharedPreferences.Editor editor = prefs.edit();
             for(int i = 0; i < 5; i++) {
                 double data = distCoeffs.get(0, i)[0];
                 Log.i("distCoeffs", "Double: " + data);
-                //Log.i("distCoeffs", "String: " + String.valueOf(data));
-                //Log.i("distCoeffs", "Back to Double: " + Double.valueOf(String.valueOf(data)));
                 editor.putString("distCoeffs"+i, String.valueOf(data));
             }
             for(int i = 0; i < 3; i++) {
@@ -512,9 +526,18 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
             calibrated = true;
             calibInProgress = false;
 
-
             loadingSpinner.setVisibility(View.INVISIBLE);
             btnVerify.setVisibility(View.VISIBLE);
+        }
+    };
+
+    // Handler for receiving the result of checking for the chessboard pattern
+    private Handler handler2 = new Handler() {
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            Bundle bundle = msg.getData();
+            String result = bundle.getString("PatternCheck");
+            Log.i("PatternCheckResult", result);
         }
     };
 }
