@@ -252,7 +252,7 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
                 break;
             // 'Take' an image and check for the chessboard in it
             case R.id.btnCaptureCalibImg:
-                checkImageForChessboard();
+                checkImageForChessboard(mRGBA);
                 break;
         }
     }
@@ -277,50 +277,65 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
         }
     }
 
-    public void checkImageForChessboard() {
-        boolean found = false;
-        Log.i("mRGBA", mRGBA.size().toString());
-        Log.i("imageCorners", imageCorners.toString());
-        // Only start the process if the image we are looking in is valid (Although other fixes should have made this redundant)
-        if(mRGBA.size().height > 0 && mRGBA.size().width > 0) {
-            Log.i("imageCorners", imageCorners.toString());
-            Mat tempMat = mRGBA;
-            try {
-                // Call the method for finding the chessboard in the image
-                found = Calib3d.findChessboardCorners(tempMat, boardSize, imageCorners, Calib3d.CALIB_CB_ADAPTIVE_THRESH + Calib3d.CALIB_CB_NORMALIZE_IMAGE + Calib3d.CALIB_CB_FAST_CHECK);
-                if (found) {
-                    Log.i("Chessboard", "Chessboard found");
-                    Log.i("ImageCorners", imageCorners.size().toString());
+    public void checkImageForChessboard(Mat imgMat) {
+        Thread patternCheckThread = new Thread() {
+            public void run() {
+                boolean found = false;
+                // Only start the process if the image we are looking in is valid (Although other fixes should have made this redundant)
+                if (imgMat.size().height > 0 && imgMat.size().width > 0) {
+                    Log.i("imageCorners", imageCorners.toString());
+                    Mat tempMat = imgMat;
+                    try {
+                        // Call the method for finding the chessboard in the image
+                        found = Calib3d.findChessboardCorners(tempMat, boardSize, imageCorners, Calib3d.CALIB_CB_ADAPTIVE_THRESH + Calib3d.CALIB_CB_NORMALIZE_IMAGE + Calib3d.CALIB_CB_FAST_CHECK);
+                        if (found) {
+                            Log.i("Chessboard", "Chessboard found");
+                            Log.i("ImageCorners", imageCorners.size().toString());
 
-                    // If the chessboard has been found and the resulting positions of the chessboard are valid (if they are not, calibration is not possible)...
-                    if (imageCorners.size().width > 0 && imageCorners.size().width > 0) {
-                        // ... add the image points to the array of image points
-                        imagePoints.add(imageCorners);
-                        imageCornerCopy = imageCorners;
+                            // If the chessboard has been found and the resulting positions of the chessboard are valid (if they are not, calibration is not possible)...
+                            if (imageCorners.size().width > 0 && imageCorners.size().width > 0) {
+                                // ... add the image points to the array of image points
+                                imagePoints.add(imageCorners);
+                                imageCornerCopy = imageCorners;
 
-                        // Then reset the object for the image corners
-                        imageCorners = new MatOfPoint2f();
-                        // Also add the object points matrix
-                        objectPoints.add(obj);
+                                // Then reset the object for the image corners
+                                imageCorners = new MatOfPoint2f();
+                                // Also add the object points matrix
+                                objectPoints.add(obj);
 
-                        // Debug
-                        Log.i("objPoints", obj.size().toString());
+                                // Debug
+                                Log.i("objPoints", obj.size().toString());
 
-                        // This should not be required anymore
-                        tempMat.copyTo(savedImage);
+                                // This should not be required anymore
+                                tempMat.copyTo(savedImage);
 
-                        // For a valid image, increase the counter by one. This is so far purely visual
-                        imgCounter++;
-                        txtImgCounter.setText(imgCounter + " / 50");
+                                // For a valid image, increase the counter by one. This is so far purely visual
+                                imgCounter++;
+                                txtImgCounter.setText(imgCounter + " / 50");
+                            }
+                        } else {
+                            // TODO: Replace this with a toast?
+                            Log.i("Chessboard", "Chessboard not found");
+                        }
+                    } catch (Exception e) {
+                        Log.i("Error", e.toString());
                     }
-                } else {
-                    // TODO: Replace this with a toast?
-                    Log.i("Chessboard", "Chessboard not found");
                 }
-            } catch (Exception e) {
-                Log.i("Error", e.toString());
+
+            Message message = new Message();
+            Bundle bundle = new Bundle();
+            if(found) {
+                bundle.putString("PatternCheck", "Success");
+            } else {
+                bundle.putString("PatternCheck", "Failure");
             }
-        }
+            message.setData(bundle);
+
+            // Send a message to the handler
+            handler2.sendMessage(message);
+            }
+        };
+        patternCheckThread.start();
     }
 
     // Detecting the chessboard pattern in a Mat variable, corners are saved to the imageCorners variable, returns true if chessboard is detected
@@ -512,6 +527,16 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
 
             loadingSpinner.setVisibility(View.INVISIBLE);
             btnVerify.setVisibility(View.VISIBLE);
+        }
+    };
+
+    // Handler for receiving the result of checking for the pattern
+    private Handler handler2 = new Handler() {
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            Bundle bundle = msg.getData();
+            String result = bundle.getString("PatternCheck");
+            Log.i("PatternCheckResult", result);
         }
     };
 }
