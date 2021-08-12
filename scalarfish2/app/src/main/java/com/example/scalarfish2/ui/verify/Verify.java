@@ -201,7 +201,12 @@ public class Verify extends Fragment implements View.OnClickListener, CameraBrid
     // Detecting the chessboard pattern in a Mat variable, corners are saved to the imageCorners variable, returns true if chessboard is detected
     public boolean chessboardDetection(Mat img_result) {
         // TODO: Everything in this method on another thread (maybe? Is that a good idea?)
-        boolean found = Calib3d.findChessboardCorners(img_result, boardSize, imageCorners, Calib3d.CALIB_CB_ADAPTIVE_THRESH + Calib3d.CALIB_CB_NORMALIZE_IMAGE + Calib3d.CALIB_CB_FAST_CHECK);
+        boolean found = false;
+        try {
+            found = Calib3d.findChessboardCorners(img_result, boardSize, imageCorners, Calib3d.CALIB_CB_ADAPTIVE_THRESH + Calib3d.CALIB_CB_NORMALIZE_IMAGE + Calib3d.CALIB_CB_FAST_CHECK);
+        } catch(Exception e) {
+            Log.e("Error", e.toString());
+        }
 
         if(found) {
             // When a chessboard has been detected, save the imageCorners by adding it to the list of corners
