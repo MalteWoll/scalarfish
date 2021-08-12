@@ -19,6 +19,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.scalarfish2.R;
@@ -40,6 +41,7 @@ import java.util.List;
 public class Verify extends Fragment implements View.OnClickListener, CameraBridgeViewBase.CvCameraViewListener2 {
     View view;
     Button btnTakeImg;
+    TextView txtValues;
 
     JavaCameraView javaCameraView;
     private final int PERMISSIONS_READ_CAMERA=1;
@@ -119,6 +121,8 @@ public class Verify extends Fragment implements View.OnClickListener, CameraBrid
 
         btnTakeImg = (Button) view.findViewById(R.id.btnTakeImage);
         btnTakeImg.setOnClickListener(this::onClick);
+
+        txtValues = (TextView) view.findViewById(R.id.textViewValues);
 
         // Permission check for camera
         if (ContextCompat.checkSelfPermission(getContext(),
@@ -262,9 +266,18 @@ public class Verify extends Fragment implements View.OnClickListener, CameraBrid
 
             double avgStd = avg / standardDeviation;
 
-            CharSequence text = "Average distance: " + String.valueOf(avg) + "; Standard Deviation: " + String.valueOf(standardDeviation) + "; Avg/StdDeviation: " + String.valueOf(avgStd);
-            Toast toast = Toast.makeText(getContext(), text, Toast.LENGTH_LONG);
-            toast.show();
+            double meanAbsoluteDeviation = 0;
+            for(int i = 0; i < distances.size(); i++) {
+                meanAbsoluteDeviation += Math.abs(distances.get(i) - avg);
+            }
+            meanAbsoluteDeviation = meanAbsoluteDeviation / distances.size();
+            Log.i("MeanAbsoluteDeviation", String.valueOf(meanAbsoluteDeviation));
+
+            CharSequence text = "Average distance: " + String.valueOf(avg) + "; Mean absolute deviation: " + String.valueOf(meanAbsoluteDeviation);
+            //Toast toast = Toast.makeText(getContext(), text, Toast.LENGTH_LONG);
+            //toast.show();
+
+            txtValues.setText(text);
 
         } else {
             Log.i("inMethod", "distBetweenPoints - chessboard not found");
