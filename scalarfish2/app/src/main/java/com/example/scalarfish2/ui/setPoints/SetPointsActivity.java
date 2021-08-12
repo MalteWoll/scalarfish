@@ -34,8 +34,9 @@ public class SetPointsActivity extends AppCompatActivity implements View.OnClick
     static TextView txtCalculatedAngle;
     static int drawCase;
     static Magnifier magnifier;
+    static Magnifier.Builder test;
 
-    @RequiresApi(api = Build.VERSION_CODES.P)
+    @RequiresApi(api = Build.VERSION_CODES.Q)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
@@ -46,6 +47,12 @@ public class SetPointsActivity extends AppCompatActivity implements View.OnClick
 
         magnifier = new Magnifier(imageView);
         //magnifier.setZoom(3.0f);
+        test=new Magnifier.Builder(imageView);
+        test.setInitialZoom(2.0f);
+        test.setSize(200,200);
+        test.setCornerRadius(50);
+
+        magnifier=test.build();
 
 
         SharedPreferences prefs = getSharedPreferences("lastImage", Context.MODE_PRIVATE);
@@ -95,6 +102,11 @@ public class SetPointsActivity extends AppCompatActivity implements View.OnClick
         public static PointF point2;
         private static Paint paint = new Paint();
 
+        private static PointF tmpPoint;
+
+
+
+
         public DrawingImageView(Context context) {
             super(context);
         }
@@ -114,14 +126,28 @@ public class SetPointsActivity extends AppCompatActivity implements View.OnClick
             float y = event.getY();
             Log.i("coords", "x: " + String.valueOf(x) + ", y: " + String.valueOf(y));
 
-            magnifier.setZoom(2.0f);
 
-            //Log.i("point tmp x", String.valueOf(tmp.x));
-            //Log.i("point tmp y", String.valueOf(tmp.y));
-            magnifier.show(event.getX(), event.getY(), event.getX(),event.getY());
 
+
+
+            //magnifier.setZoom(2.0f);
+            magnifier.show(event.getX(), event.getY(), event.getX(),event.getY()-150);
+
+
+
+
+
+
+            //y-100 als offset für lupe
 
             switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    //tmpPoint=new PointF(x,y);
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    //tmpPoint.set(x,y);
+                    tmpPoint=new PointF(x,y);
+                    break;
                 case MotionEvent.ACTION_UP:
                     if (point1 == null) {
                         eyePoint = new PointF(imageView.getWidth() / 2, imageView.getHeight());
@@ -162,6 +188,9 @@ public class SetPointsActivity extends AppCompatActivity implements View.OnClick
             if (point2 != null) {
                 canvas.drawLine(point2.x, point2.y, eyePoint.x, eyePoint.y, paint);
                 canvas.drawCircle(point2.x, point2.y, 20, paint);
+            }
+            if (tmpPoint != null) {
+                canvas.drawCircle(tmpPoint.x, tmpPoint.y, 10, paint);
             }
         }
 
