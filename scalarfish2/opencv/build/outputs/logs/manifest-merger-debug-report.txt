@@ -3,21 +3,9 @@ manifest
 ADDED from /Users/alainpaiewar/AndroidStudioProjects/scalarfish/scalarfish2/opencv/java/AndroidManifest.xml:2:1-4:12
 INJECTED from /Users/alainpaiewar/AndroidStudioProjects/scalarfish/scalarfish2/opencv/java/AndroidManifest.xml:2:1-4:12
 INJECTED from /Users/alainpaiewar/AndroidStudioProjects/scalarfish/scalarfish2/opencv/java/AndroidManifest.xml:2:1-4:12
-INJECTED from /Users/alainpaiewar/AndroidStudioProjects/scalarfish/scalarfish2/opencv/java/AndroidManifest.xml:2:1-4:12
-INJECTED from /Users/alainpaiewar/AndroidStudioProjects/scalarfish/scalarfish2/opencv/java/AndroidManifest.xml:2:1-4:12
-INJECTED from /Users/alainpaiewar/AndroidStudioProjects/scalarfish/scalarfish2/opencv/java/AndroidManifest.xml:2:1-4:12
-INJECTED from /Users/alainpaiewar/AndroidStudioProjects/scalarfish/scalarfish2/opencv/java/AndroidManifest.xml:2:1-4:12
 	package
 		ADDED from /Users/alainpaiewar/AndroidStudioProjects/scalarfish/scalarfish2/opencv/java/AndroidManifest.xml:3:7-27
 		INJECTED from /Users/alainpaiewar/AndroidStudioProjects/scalarfish/scalarfish2/opencv/java/AndroidManifest.xml
-		INJECTED from /Users/alainpaiewar/AndroidStudioProjects/scalarfish/scalarfish2/opencv/java/AndroidManifest.xml
-	android:versionName
-		INJECTED from /Users/alainpaiewar/AndroidStudioProjects/scalarfish/scalarfish2/opencv/java/AndroidManifest.xml
-		ADDED from /Users/alainpaiewar/AndroidStudioProjects/scalarfish/scalarfish2/opencv/java/AndroidManifest.xml:2:1-4:12
-		INJECTED from /Users/alainpaiewar/AndroidStudioProjects/scalarfish/scalarfish2/opencv/java/AndroidManifest.xml
-	android:versionCode
-		INJECTED from /Users/alainpaiewar/AndroidStudioProjects/scalarfish/scalarfish2/opencv/java/AndroidManifest.xml
-		ADDED from /Users/alainpaiewar/AndroidStudioProjects/scalarfish/scalarfish2/opencv/java/AndroidManifest.xml:2:1-4:12
 		INJECTED from /Users/alainpaiewar/AndroidStudioProjects/scalarfish/scalarfish2/opencv/java/AndroidManifest.xml
 	xmlns:android
 		ADDED from /Users/alainpaiewar/AndroidStudioProjects/scalarfish/scalarfish2/opencv/java/AndroidManifest.xml:2:11-69

@@ -1,6 +1,7 @@
 package com.example.scalarfish2.ui.setPoints;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
@@ -9,8 +10,10 @@ import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Point;
 import android.graphics.PointF;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -18,19 +21,21 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.Magnifier;
 import android.widget.TextView;
 
 import com.example.scalarfish2.R;
 
-public class SetPointsActivity extends AppCompatActivity implements View.OnClickListener{
+public class SetPointsActivity extends AppCompatActivity implements View.OnClickListener {
     static ImageView imageView;
     int maxPoints;
     Button btnCalibrateAngle;
     Button btnResetPoints;
     static TextView txtCalculatedAngle;
     static int drawCase;
+    static Magnifier magnifier;
 
-
+    @RequiresApi(api = Build.VERSION_CODES.P)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
@@ -38,6 +43,9 @@ public class SetPointsActivity extends AppCompatActivity implements View.OnClick
         setContentView(R.layout.activity_set_points);
 
         imageView = findViewById(R.id.setPointsImage);
+
+        magnifier = new Magnifier(imageView);
+        //magnifier.setZoom(3.0f);
 
 
         SharedPreferences prefs = getSharedPreferences("lastImage", Context.MODE_PRIVATE);
@@ -56,9 +64,10 @@ public class SetPointsActivity extends AppCompatActivity implements View.OnClick
         drawCase = 0;
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.P)
     @Override
-    public void onClick(View view){
-        switch(view.getId()){
+    public void onClick(View view) {
+        switch (view.getId()) {
             case R.id.btnCalculateAngle:
                 Log.i("btn", "Calculate Angle");
                 float angle = DrawingImageView.calculateAngle();
@@ -69,7 +78,18 @@ public class SetPointsActivity extends AppCompatActivity implements View.OnClick
     }
 
 
+    @RequiresApi(api = Build.VERSION_CODES.P)
     public static class DrawingImageView extends androidx.appcompat.widget.AppCompatImageView {
+
+        /*
+        public Builder(DrawingImageView drawingImageView){
+            super();
+
+        }
+
+         */
+
+
         public static PointF eyePoint;
         public static PointF point1;
         public static PointF point2;
@@ -87,40 +107,57 @@ public class SetPointsActivity extends AppCompatActivity implements View.OnClick
             super(context, attrs, defStyleAttr);
         }
 
+        @RequiresApi(api = Build.VERSION_CODES.Q)
         @Override
         public boolean onTouchEvent(@NonNull MotionEvent event) {
             float x = event.getX();
             float y = event.getY();
             Log.i("coords", "x: " + String.valueOf(x) + ", y: " + String.valueOf(y));
 
+            magnifier.setZoom(2.0f);
+
+            //Log.i("point tmp x", String.valueOf(tmp.x));
+            //Log.i("point tmp y", String.valueOf(tmp.y));
+            magnifier.show(event.getX(), event.getY(), event.getX(),event.getY());
+
+
             switch (event.getAction()) {
-                case MotionEvent.ACTION_DOWN:
-                    if(point1 == null){
-                        eyePoint = new PointF(imageView.getWidth()/2, imageView.getHeight());
+                case MotionEvent.ACTION_UP:
+                    if (point1 == null) {
+                        eyePoint = new PointF(imageView.getWidth() / 2, imageView.getHeight());
                         point1 = new PointF(x, y);
                         invalidate();
-                        break;
-                    }if(point2 == null){
-                        point2 = new PointF(x, y);
-                        invalidate();
-                        break;
-                    }else {
-                        Log.i("Max Points reached", "2");
+                        magnifier.dismiss();
                         break;
                     }
-                }
+                    if (point2 == null) {
+                        point2 = new PointF(x, y);
+                        invalidate();
+                        magnifier.dismiss();
+                        break;
+                    } else {
+                        Log.i("Max Points reached", "2");
+                        magnifier.dismiss();
+                        Log.i("action up", "action up");
+                        break;
+                    }
+
+
+
+
+            }
             return true;
         }
 
         @Override
-        protected void onDraw( Canvas canvas) {
+        protected void onDraw(Canvas canvas) {
             super.onDraw(canvas);
-            paint.setColor(Color.rgb(190, 70,70));
+            paint.setColor(Color.rgb(190, 70, 70));
             paint.setStrokeWidth(5);
             if (point1 != null) {
                 canvas.drawLine(point1.x, point1.y, eyePoint.x, eyePoint.y, paint);
                 canvas.drawCircle(point1.x, point1.y, 20, paint);
-                canvas.drawCircle(imageView.getWidth()/2, imageView.getHeight(), 20, paint);
+                canvas.drawCircle(imageView.getWidth() / 2, imageView.getHeight(), 20, paint);
             }
             if (point2 != null) {
                 canvas.drawLine(point2.x, point2.y, eyePoint.x, eyePoint.y, paint);
@@ -128,7 +165,7 @@ public class SetPointsActivity extends AppCompatActivity implements View.OnClick
             }
         }
 
-        public static float calculateAngle(){
+        public static float calculateAngle() {
             Log.i("eyePoint", String.valueOf(eyePoint));
             PointF a = new PointF(point1.x - eyePoint.x, point1.y - eyePoint.y);
             PointF b = new PointF(point2.x - eyePoint.x, point2.y - eyePoint.y);
