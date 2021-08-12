@@ -277,6 +277,7 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
         }
     }
 
+    // Method for checking for the chessboard pattern. The actual checking is done in another thread, to use more processing power.
     public void checkImageForChessboard(Mat imgMat) {
         Thread patternCheckThread = new Thread() {
             public void run() {
@@ -530,7 +531,7 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
         }
     };
 
-    // Handler for receiving the result of checking for the pattern
+    // Handler for receiving the result of checking for the chessboard pattern
     private Handler handler2 = new Handler() {
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
