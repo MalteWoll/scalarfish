@@ -246,6 +246,7 @@ public class Verify extends Fragment implements View.OnClickListener, CameraBrid
                     distances.add(dist2);
                 }
 
+                // This makes sure to not add the distances between the last corner of a row and the first corner of the next row
                 counter++;
                 if(counter % 9 == 0) {
                     Log.i("HorizontalDistanceAdded", i + ": Deleted, " + String.valueOf(dist));
@@ -257,6 +258,7 @@ public class Verify extends Fragment implements View.OnClickListener, CameraBrid
             }
             Log.i("Distance size", String.valueOf(distances.size()));
 
+            // Calculating the average distance between two points
             double avg = 0;
             for(int i = 0; i < distances.size(); i++) {
                 avg += distances.get(i);
@@ -264,6 +266,7 @@ public class Verify extends Fragment implements View.OnClickListener, CameraBrid
             avg = avg / ((int)distances.size());
             Log.i("Average distance", String.valueOf(avg));
 
+            // Calculating the standard deviation. For now, we do not use this.
             double var = 0;
             for(int i = 0; i < distances.size(); i++) {
                 var += Math.pow(distances.get(i)-avg, 2);
@@ -272,8 +275,7 @@ public class Verify extends Fragment implements View.OnClickListener, CameraBrid
             double standardDeviation = Math.sqrt(var);
             Log.i("Standard Deviation", String.valueOf(standardDeviation));
 
-            double avgStd = avg / standardDeviation;
-
+            // Calculating the mean absolute deviationas measurement of error in the calibration result
             double meanAbsoluteDeviation = 0;
             for(int i = 0; i < distances.size(); i++) {
                 meanAbsoluteDeviation += Math.abs(distances.get(i) - avg);
