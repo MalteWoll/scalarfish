@@ -204,7 +204,6 @@ public class Verify extends Fragment implements View.OnClickListener, CameraBrid
 
     // Detecting the chessboard pattern in a Mat variable, corners are saved to the imageCorners variable, returns true if chessboard is detected
     public boolean chessboardDetection(Mat img_result) {
-        // TODO: Everything in this method on another thread (maybe? Is that a good idea?)
         boolean found = false;
         try {
             found = Calib3d.findChessboardCorners(img_result, boardSize, imageCorners, Calib3d.CALIB_CB_ADAPTIVE_THRESH + Calib3d.CALIB_CB_NORMALIZE_IMAGE + Calib3d.CALIB_CB_FAST_CHECK);
@@ -223,7 +222,7 @@ public class Verify extends Fragment implements View.OnClickListener, CameraBrid
         return found;
     }
 
-    // To verify the calibration, we measure the distance between points for a taken image of the chessboard. Equal distances between the points of a row mean good calibration results
+    // To verify the calibration, we measure the distance between points for a taken image of the chessboard. Equal distances between the points mean good calibration results
     public void distanceBetweenPoints() {
         boolean chessboardFound = chessboardDetection(savedImage);
         Log.i("inMethod", "distBetweenPoints");
@@ -233,22 +232,33 @@ public class Verify extends Fragment implements View.OnClickListener, CameraBrid
             int counter = 0;
             // Calculate the distance between points of the chessboard. If the distances are equal, the camera should be calibrated correctly.
             for(int i = 0; i < (boardSize.width * boardSize.height - 1); i++) {
+                // Horizontal distances between points: Take a point and the next point in the array, calculate the distance between them
                 double pow1 = Math.pow((imageCornerCopy.get(i+1,0)[0] - imageCornerCopy.get(i,0)[0]), 2);
                 double pow2 = Math.pow((imageCornerCopy.get(i+1,0)[1] - imageCornerCopy.get(i,0)[1]), 2);
                 double dist = Math.sqrt(pow1 + pow2);
-                //Log.i("Distance", "Distance " + i + ": " + dist);
 
+                // Vertical distances between points: Take a point and the point in the next row, in this case +9, calculate the distance. Skip the last row, since there is no next row with points
+                if((i + 9) < (boardSize.width * boardSize.height - 1)){
+                    double pow3 = Math.pow((imageCornerCopy.get(i + 9, 0)[0] - imageCornerCopy.get(i, 0)[0]), 2);
+                    double pow4 = Math.pow((imageCornerCopy.get(i + 9, 0)[1] - imageCornerCopy.get(i, 0)[1]), 2);
+                    double dist2 = Math.sqrt(pow3 + pow4);
+                    Log.i("VerticalDistanceAdded", i + ": " + String.valueOf(dist2));
+                    distances.add(dist2);
+                }
+
+                // This makes sure to not add the distances between the last corner of a row and the first corner of the next row
                 counter++;
                 if(counter % 9 == 0) {
-                    Log.i("Distance added", i + ": Deleted, " + String.valueOf(dist));
+                    Log.i("HorizontalDistanceAdded", i + ": Deleted, " + String.valueOf(dist));
                     counter = 0;
                 } else {
                     distances.add(dist);
-                    Log.i("Distance added", i + ": " + String.valueOf(dist));
+                    Log.i("HorizontalDistanceAdded", i + ": " + String.valueOf(dist));
                 }
             }
             Log.i("Distance size", String.valueOf(distances.size()));
 
+            // Calculating the average distance between two points
             double avg = 0;
             for(int i = 0; i < distances.size(); i++) {
                 avg += distances.get(i);
@@ -256,6 +266,7 @@ public class Verify extends Fragment implements View.OnClickListener, CameraBrid
             avg = avg / ((int)distances.size());
             Log.i("Average distance", String.valueOf(avg));
 
+            // Calculating the standard deviation. For now, we do not use this.
             double var = 0;
             for(int i = 0; i < distances.size(); i++) {
                 var += Math.pow(distances.get(i)-avg, 2);
@@ -264,8 +275,7 @@ public class Verify extends Fragment implements View.OnClickListener, CameraBrid
             double standardDeviation = Math.sqrt(var);
             Log.i("Standard Deviation", String.valueOf(standardDeviation));
 
-            double avgStd = avg / standardDeviation;
-
+            // Calculating the mean absolute deviationas measurement of error in the calibration result
             double meanAbsoluteDeviation = 0;
             for(int i = 0; i < distances.size(); i++) {
                 meanAbsoluteDeviation += Math.abs(distances.get(i) - avg);
@@ -274,8 +284,8 @@ public class Verify extends Fragment implements View.OnClickListener, CameraBrid
             Log.i("MeanAbsoluteDeviation", String.valueOf(meanAbsoluteDeviation));
 
             CharSequence text = "Average distance: " + String.valueOf(avg) + "; Mean absolute deviation: " + String.valueOf(meanAbsoluteDeviation);
-            //Toast toast = Toast.makeText(getContext(), text, Toast.LENGTH_LONG);
-            //toast.show();
+            Toast toast = Toast.makeText(getContext(), text, Toast.LENGTH_LONG);
+            toast.show();
 
             txtValues.setText(text);
 
@@ -340,10 +350,13 @@ public class Verify extends Fragment implements View.OnClickListener, CameraBrid
         mRGBA = inputFrame.rgba();
         Mat grayImage = new Mat();
 
+        // Undistort the image with the calibration result
         Calib3d.undistort(mRGBA, undistorted, intrinsic, distCoeffs);
 
+        // Convert the image to a grayscale for faster calculations
         Imgproc.cvtColor(undistorted, grayImage, Imgproc.COLOR_BGR2GRAY);
 
+        // Debug
         if(debug) {
             Log.i("intrinsic", intrinsic.toString());
             Log.i("intrinsic", intrinsic.dump());
