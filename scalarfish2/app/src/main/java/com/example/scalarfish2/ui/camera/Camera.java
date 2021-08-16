@@ -163,6 +163,7 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
 
         imagePreview = (ImageView) view.findViewById(R.id.imageViewCamera);
 
+        /*
         if (cameraManager!=null){
             try {
                 cameras= cameraManager.getCameraIdList();
@@ -192,6 +193,7 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
 
         Log.e("focalLengthArray: ", String.valueOf(focalLength[0]));
 
+         */
 
         switchUseCalibrated = (Switch) view.findViewById(R.id.switchCalibration);
         // Set the listener for the switch, since it needs its own
