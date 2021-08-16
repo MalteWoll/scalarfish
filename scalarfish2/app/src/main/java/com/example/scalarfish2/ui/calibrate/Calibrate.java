@@ -79,6 +79,11 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
     private Mat mRGBA; /* a matrix for copying the values of the current frame of the camera to */
     private final int PERMISSIONS_READ_CAMERA=1;
 
+    //try get focal lnegth
+    private float focalLength;
+
+
+
     // Calibration values
     Size boardSize = new Size(9,6); /* The size of the chessboard */
     MatOfPoint2f imageCorners = new MatOfPoint2f(); /* A matrix for detecting the corners */

@@ -8,8 +8,15 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.params.StreamConfigurationMap;
 import android.os.Bundle;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -28,6 +35,8 @@ import com.example.scalarfish2.R;
 import com.example.scalarfish2.ui.setPoints.SetPointsActivity;
 import com.example.scalarfish2.util.CustomCameraView;
 
+
+
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.OpenCVLoader;
@@ -41,6 +50,7 @@ import org.opencv.core.Mat;
 import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Iterator;
 
 public class Camera extends Fragment implements View.OnClickListener, CameraBridgeViewBase.CvCameraViewListener2 {
 
@@ -65,6 +75,17 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
     ImageButton btnCancelImg;
     Switch switchUseCalibrated;
     ImageView imagePreview;
+
+
+
+
+    CameraDevice cameraDevice;
+    CameraManager cameraManager;
+    String [] cameras;
+
+    CameraCharacteristics cameraCharacteristics;
+    float [] focalLength;
+
 
     boolean useCalibration = false; /* Value of the switch on top to decide if the calibrated image should be used */
 
@@ -141,6 +162,36 @@ public class Camera extends Fragment implements View.OnClickListener, CameraBrid
         btnCancelImg.setVisibility(View.INVISIBLE);
 
         imagePreview = (ImageView) view.findViewById(R.id.imageViewCamera);
+
+        if (cameraManager!=null){
+            try {
+                cameras= cameraManager.getCameraIdList();
+            } catch (CameraAccessException e) {
+                e.printStackTrace();
+            }
+        }
+
+        String cameraId;
+        if (cameras!=null){
+            cameraId=cameras[0];
+
+            try {
+                cameraCharacteristics=cameraManager.getCameraCharacteristics(cameraId);
+            } catch (CameraAccessException e) {
+                e.printStackTrace();
+            }
+        }
+
+
+        CameraCharacteristics.Key key=CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS;
+
+        if (key!=null&&cameraCharacteristics!=null){
+
+            focalLength= (float[]) cameraCharacteristics.get(key);
+        }
+
+        Log.e("focalLengthArray: ", String.valueOf(focalLength[0]));
+
 
         switchUseCalibrated = (Switch) view.findViewById(R.id.switchCalibration);
         // Set the listener for the switch, since it needs its own
