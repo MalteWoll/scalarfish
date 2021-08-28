@@ -18,7 +18,10 @@ public class CalibrateDialog extends AppCompatDialogFragment {
     public Dialog onCreateDialog(@Nullable @org.jetbrains.annotations.Nullable Bundle savedInstanceState) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setTitle("How to calibrate")
-                .setMessage("tutorial")
+                .setMessage("To achieve the best calibration we recommend to take 50 pictures of the" +
+                        " chessboard. Make sure to cover different perspective views and rotate your" +
+                        " phone 90 degrees. Everytime the counter in the upper right corner goes up " +
+                        "the app was able to detect the calibration chart")
                 .setPositiveButton("ok", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
