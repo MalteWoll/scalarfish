@@ -4,6 +4,7 @@ package com.example.scalarfish2.ui.calibrate;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -15,6 +16,7 @@ import android.os.Bundle;
 import android.os.Process;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -67,6 +69,7 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
     // For accessing the elements in the fragment
     ImageView imgView; /* This is not needed, for now, since we are live capturing the images */
     View view; /* The view everything is in */
+    Button btnInfo; /* button to open the info dialog */
     Button btnCaptureImg; /* button to start the image capture process with */
     Button btnCalibrate; /* button to start the calibration process with */
     Button btnVerify; /* button that takes the user to the verification fragment */
@@ -160,6 +163,10 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
 
         // When loading the fragment, no matter from where, change the title
         ((AppCompatActivity)getActivity()).getSupportActionBar().setTitle("Calibration");
+
+        // Get the button for opening the info dialogue
+        btnInfo = (Button) view.findViewById(R.id.btnInfo);
+        btnInfo.setOnClickListener(this);
 
         // Get the button for capturing a calibration image and set the listener
         btnCaptureImg = (Button) view.findViewById(R.id.btnCaptureImg);
@@ -259,7 +266,14 @@ public class Calibrate<FragmentHomeBinding> extends Fragment implements View.OnC
             case R.id.btnCaptureCalibImg:
                 checkImageForChessboard(mRGBA);
                 break;
+            case R.id.btnInfo:
+                openDialog();
         }
+    }
+
+    public void openDialog(){
+        CalibrateDialog calibrateDialog = new CalibrateDialog();
+        calibrateDialog.show(getParentFragmentManager(), "calibrate dialog");
     }
 
     @Override
