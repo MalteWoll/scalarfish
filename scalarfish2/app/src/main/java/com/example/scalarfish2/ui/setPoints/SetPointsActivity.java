@@ -35,6 +35,7 @@ public class SetPointsActivity extends AppCompatActivity implements View.OnClick
     static int drawCase;
     static Magnifier magnifier;
     static Magnifier.Builder test;
+    static String version;
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
     @Override
@@ -47,12 +48,17 @@ public class SetPointsActivity extends AppCompatActivity implements View.OnClick
 
         magnifier = new Magnifier(imageView);
         //magnifier.setZoom(3.0f);
-        test=new Magnifier.Builder(imageView);
-        test.setInitialZoom(2.0f);
-        test.setSize(200,200);
-        test.setCornerRadius(50);
+        version = android.os.Build.VERSION.SDK ;
+        Log.i("Version:", version);
+        if(Integer.parseInt(version) >= 29) {
+            test=new Magnifier.Builder(imageView);
+            test.setInitialZoom(2.0f);
+            test.setSize(200,200);
+            test.setCornerRadius(50);
 
-        magnifier=test.build();
+            magnifier=test.build();
+        }
+
 
 
         SharedPreferences prefs = getSharedPreferences("lastImage", Context.MODE_PRIVATE);
@@ -129,10 +135,10 @@ public class SetPointsActivity extends AppCompatActivity implements View.OnClick
 
 
 
-
-            //magnifier.setZoom(2.0f);
-            magnifier.show(event.getX(), event.getY(), event.getX(),event.getY()-150);
-
+            if(Integer.parseInt(version) >= 29) {
+                //magnifier.setZoom(2.0f);
+                magnifier.show(event.getX(), event.getY(), event.getX(), event.getY() - 150);
+            }
 
 
 
@@ -153,17 +159,23 @@ public class SetPointsActivity extends AppCompatActivity implements View.OnClick
                         eyePoint = new PointF(imageView.getWidth() / 2, imageView.getHeight());
                         point1 = new PointF(x, y);
                         invalidate();
-                        magnifier.dismiss();
+                        if(Integer.parseInt(version) >= 29) {
+                            magnifier.dismiss();
+                        }
                         break;
                     }
                     if (point2 == null) {
                         point2 = new PointF(x, y);
                         invalidate();
-                        magnifier.dismiss();
+                        if(Integer.parseInt(version) >= 29) {
+                            magnifier.dismiss();
+                        }
                         break;
                     } else {
                         Log.i("Max Points reached", "2");
-                        magnifier.dismiss();
+                        if(Integer.parseInt(version) >= 29) {
+                            magnifier.dismiss();
+                        }
                         Log.i("action up", "action up");
                         break;
                     }
